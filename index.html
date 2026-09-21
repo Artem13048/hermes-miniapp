@@ -174,9 +174,27 @@
         let currentIndex = 0;
         let likedCount = 0;
 
-        window.WebApp?.ready();
+                // Инициализация MAX WebApp (если внутри MAX)
+        if (window.WebApp) {
+            window.WebApp.ready();
+        }
 
-        const startParam = window.WebApp?.initDataUnsafe?.start_param || "";
+        // Получаем start_param двумя способами:
+        // 1. Из MAX WebApp (когда работает внутри MAX)
+        // 2. Из URL-параметра ?startapp= (для теста в браузере)
+        let startParam = "";
+
+        // Способ 1: из MAX
+        if (window.WebApp?.initDataUnsafe?.start_param) {
+            startParam = window.WebApp.initDataUnsafe.start_param;
+            console.log("start_param из MAX:", startParam);
+        } else {
+            // Способ 2: из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            startParam = urlParams.get("startapp") || "";
+            console.log("start_param из URL:", startParam);
+        }
+
         const [uid, cid] = startParam.split(":");
         userId = parseInt(uid) || null;
         cityId = parseInt(cid) || null;
