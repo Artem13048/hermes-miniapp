@@ -87,6 +87,16 @@
             object-fit: cover;
             background: #ddd;
         }
+        .card-icon {
+            width: 100%;
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 96px;
+            background: linear-gradient(135deg, #f5f5f7 0%, #e8e8ec 100%);
+            user-select: none;
+        }
         .card-body { padding: 20px; }
         .card-body h2 { font-size: 20px; margin-bottom: 8px; }
         .card-meta { color: #888; font-size: 14px; margin-bottom: 8px; }
@@ -114,6 +124,7 @@
             border: none;
             font-size: 28px;
             cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         .btn-action:active { transform: scale(0.9); }
@@ -137,6 +148,7 @@
             padding: 40px;
             color: #888;
             display: none;
+            line-height: 1.5;
         }
         #empty.visible { display: block; }
     </style>
@@ -152,7 +164,7 @@
 
         <div id="card-container"></div>
 
-        <div id="empty">🎉 Все карточки просмотрены!</div>
+        <div id="empty"></div>
 
         <div id="actions">
             <button class="btn-action btn-skip" onclick="swipe(false)">✕</button>
@@ -163,8 +175,11 @@
     </div>
 
     <script>
-        // ⚠️ ЗАМЕНИ на свой домен API
-        const API_URL = "http://localhost:8000/api";
+        // ============================================
+        // НАСТРОЙКИ
+        // ============================================
+        // ⚠️ ЗАМЕНИ на свой публичный API-домен (когда задеплоишь)
+        const API_URL = "http://127.0.0.1:8000/api";
 
         let userId = null;
         let cityId = null;
@@ -174,49 +189,151 @@
         let currentIndex = 0;
         let likedCount = 0;
 
-                // Инициализация MAX WebApp (если внутри MAX)
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================
         if (window.WebApp) {
             window.WebApp.ready();
+            console.log("✅ WebApp готов");
+        } else {
+            console.log("⚠️ WebApp не найден (открыто вне MAX)");
         }
 
-        // Получаем start_param двумя способами:
-        // 1. Из MAX WebApp (когда работает внутри MAX)
-        // 2. Из URL-параметра ?startapp= (для теста в браузере)
-        let startParam = "";
+        // Пробуем три способа получить параметры
+        initParams().then(() => {
+            if (userId) {
+                startApp();
+            } else {
+                showError(
+                    "Не удалось получить user_id.\n\n" +
+                    "Откройте приложение через кнопку в боте MAX."
+                );
+            }
+        });
 
-        // Способ 1: из MAX
-        if (window.WebApp?.initDataUnsafe?.start_param) {
-            startParam = window.WebApp.initDataUnsafe.start_param;
-            console.log("start_param из MAX:", startParam);
-        } else {
-            // Способ 2: из URL
-            const urlParams = new URLSearchParams(window.location.search);
-            startParam = urlParams.get("startapp") || "";
-            console.log("start_param из URL:", startParam);
+        async function initParams() {
+            // --- Способ 1: initDataUnsafe (объект) ---
+            try {
+                const unsafe = window.WebApp?.initDataUnsafe;
+                if (unsafe) {
+                    console.log("initDataUnsafe:", unsafe);
+
+                    if (unsafe.user?.id) {
+                        userId = unsafe.user.id;
+                        console.log("✅ user_id из initDataUnsafe:", userId);
+                    }
+                    if (unsafe.start_param) {
+                        console.log("✅ start_param:", unsafe.start_param);
+                        const [uid, cid] = unsafe.start_param.split(":");
+                        if (uid && !userId) userId = parseInt(uid);
+                        if (cid) cityId = parseInt(cid);
+                    }
+                }
+            } catch (e) {
+                console.error("Ошибка initDataUnsafe:", e);
+            }
+
+            // --- Способ 2: initData (строка) ---
+            if (!userId) {
+                try {
+                    const raw = window.WebApp?.initData;
+                    console.log("initData (строка):", raw);
+
+                    if (raw) {
+                        const params = new URLSearchParams(raw);
+
+                        // user — это JSON-строка
+                        const userJson = params.get("user");
+                        if (userJson) {
+                            const userObj = JSON.parse(userJson);
+                            if (userObj.id) {
+                                userId = userObj.id;
+                                console.log("✅ user_id из initData:", userId);
+                            }
+                        }
+
+                        // start_param
+                        const sp = params.get("start_param");
+                        if (sp) {
+                            console.log("✅ start_param из initData:", sp);
+                            const [uid, cid] = sp.split(":");
+                            if (uid && !userId) userId = parseInt(uid);
+                            if (cid) cityId = parseInt(cid);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Ошибка initData:", e);
+                }
+            }
+
+            // --- Способ 3: URL ---
+            if (!userId) {
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const sp = urlParams.get("startapp");
+                    console.log("startapp из URL:", sp);
+
+                    if (sp) {
+                        const [uid, cid] = sp.split(":");
+                        if (uid) userId = parseInt(uid) || null;
+                        if (cid) cityId = parseInt(cid) || null;
+                    }
+                } catch (e) {
+                    console.error("Ошибка URL:", e);
+                }
+            }
+
+            console.log("📊 Итог: user_id =", userId, ", city_id =", cityId);
+
+            // --- Если city_id нет — запрашиваем у API ---
+            if (userId && !cityId) {
+                try {
+                    const resp = await fetch(
+                        `${API_URL}/user_city?user_id=${userId}`
+                    );
+                    const data = await resp.json();
+                    if (data.city_id) {
+                        cityId = data.city_id;
+                        console.log("✅ city_id из API:", cityId);
+                    } else {
+                        console.log("⚠️ У пользователя не выбран город");
+                    }
+                } catch (e) {
+                    console.error("Ошибка запроса city_id:", e);
+                }
+            }
         }
 
-        const [uid, cid] = startParam.split(":");
-        userId = parseInt(uid) || null;
-        cityId = parseInt(cid) || null;
-
-        console.log("User:", userId, "City:", cityId);
-
-        if (!userId || !cityId) {
-            document.getElementById("empty").innerText =
-                "Ошибка: не переданы параметры user_id или city_id";
-            document.getElementById("empty").classList.add("visible");
-        } else {
+        function startApp() {
+            if (!cityId) {
+                showError(
+                    "Сначала выберите город в боте.\n\n" +
+                    "Откройте бот, отправьте /start и выберите город, " +
+                    "затем вернитесь сюда."
+                );
+                return;
+            }
             loadCategories().then(() => loadPlaces());
             loadLikes();
         }
 
+        function showError(text) {
+            const el = document.getElementById("empty");
+            el.innerText = text;
+            el.classList.add("visible");
+            document.getElementById("actions").style.display = "none";
+        }
+
+        // ============================================
+        // КАТЕГОРИИ
+        // ============================================
         async function loadCategories() {
             try {
                 const resp = await fetch(`${API_URL}/categories`);
                 categories = await resp.json();
                 renderTabs();
             } catch (e) {
-                console.error("Ошибка категорий:", e);
+                console.error("Ошибка загрузки категорий:", e);
             }
         }
 
@@ -246,6 +363,9 @@
             loadPlaces();
         }
 
+        // ============================================
+        // МЕСТА
+        // ============================================
         async function loadPlaces() {
             const container = document.getElementById("card-container");
             const empty = document.getElementById("empty");
@@ -258,11 +378,12 @@
                     url += `&category_id=${selectedCategoryId}`;
                 }
 
+                console.log("Запрос:", url);
                 const resp = await fetch(url);
                 places = await resp.json();
                 currentIndex = 0;
 
-                console.log(`Загружено: ${places.length} мест`);
+                console.log(`📦 Загружено мест: ${places.length}`);
 
                 if (places.length === 0) {
                     empty.innerText = "В этой категории пока нет мест";
@@ -274,27 +395,38 @@
                 document.getElementById("actions").style.display = "flex";
                 renderNextCard();
             } catch (e) {
-                console.error("Ошибка мест:", e);
+                console.error("Ошибка загрузки мест:", e);
+                empty.innerText = "Ошибка загрузки мест";
+                empty.classList.add("visible");
             }
         }
 
+        // ============================================
+        // ЛАЙКИ
+        // ============================================
         async function loadLikes() {
             try {
                 const resp = await fetch(`${API_URL}/likes?user_id=${userId}`);
                 const data = await resp.json();
                 likedCount = data.count || 0;
                 document.getElementById("counter").innerText = likedCount;
+                console.log(`❤️ Лайков: ${likedCount}`);
             } catch (e) {
-                console.error("Ошибка лайков:", e);
+                console.error("Ошибка загрузки лайков:", e);
             }
         }
 
+        // ============================================
+        // КАРТОЧКА
+        // ============================================
         function renderNextCard() {
             const container = document.getElementById("card-container");
             container.innerHTML = "";
 
             if (currentIndex >= places.length) {
-                document.getElementById("empty").classList.add("visible");
+                const empty = document.getElementById("empty");
+                empty.innerText = "🎉 Все карточки просмотрены!";
+                empty.classList.add("visible");
                 document.getElementById("actions").style.display = "none";
                 if (likedCount > 0) {
                     document.getElementById("finish-btn").classList.add("visible");
@@ -303,12 +435,31 @@
             }
 
             const place = places[currentIndex];
-            const imgSrc = `https://picsum.photos/seed/${place.id}/600/400`;
+
+            // Иконки категорий
+            const categoryIcons = {
+                1: "🏛",  // Достопримечательности
+                2: "🎨",  // Музеи
+                3: "🌳",  // Парки
+                4: "🍽",  // Гастрономия
+                5: "🎢",  // Развлечения
+                6: "⛪",  // Религиозные
+            };
+
+            let imageBlock;
+            if (place.photo_url) {
+                const icon = categoryIcons[place.category_id] || "📍";
+                imageBlock = `<img src="${place.photo_url}" alt="${place.name}"
+                    onerror="this.outerHTML='<div class=\\'card-icon\\'>${icon}</div>'">`;
+            } else {
+                const icon = categoryIcons[place.category_id] || "📍";
+                imageBlock = `<div class="card-icon">${icon}</div>`;
+            }
 
             const card = document.createElement("div");
             card.className = "card";
             card.innerHTML = `
-                <img src="${imgSrc}" alt="${place.name}">
+                ${imageBlock}
                 <div class="card-body">
                     <h2>${place.name}</h2>
                     <div class="card-meta">📍 ${place.address || "Адрес не указан"}</div>
@@ -319,6 +470,9 @@
             container.appendChild(card);
         }
 
+        // ============================================
+        // СВАЙП
+        // ============================================
         async function swipe(liked) {
             if (currentIndex >= places.length) return;
 
@@ -340,10 +494,13 @@
                     await fetch(`${API_URL}/likes`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ user_id: userId, place_id: place.id }),
+                        body: JSON.stringify({
+                            user_id: userId,
+                            place_id: place.id,
+                        }),
                     });
                 } catch (e) {
-                    console.error("Ошибка лайка:", e);
+                    console.error("Ошибка сохранения лайка:", e);
                 }
             }
 
@@ -351,8 +508,15 @@
             setTimeout(renderNextCard, 250);
         }
 
+        // ============================================
+        // ФИНАЛИЗАЦИЯ
+        // ============================================
         function finish() {
-            window.WebApp?.close();
+            if (window.WebApp?.close) {
+                window.WebApp.close();
+            } else {
+                alert("Маршрут готов! Вернитесь в бот и нажмите «Построить маршрут».");
+            }
         }
     </script>
 </body>
