@@ -136,7 +136,6 @@
         }
         .card-desc { font-size: 14px; color: #555; line-height: 1.4; }
 
-        /* Индикатор свайпа */
         .swipe-badge {
             position: absolute;
             top: 20px;
@@ -203,7 +202,6 @@
         }
         #empty.visible { display: block; }
 
-        /* Карточки избранного */
         .favorite-card {
             background: #fff;
             border-radius: 16px;
@@ -211,6 +209,9 @@
             margin-bottom: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             width: 100%;
+            overflow: hidden;
+            transition: transform 0.3s ease, opacity 0.3s ease,
+                        height 0.2s ease, margin 0.2s ease, padding 0.2s ease;
         }
         .favorite-card h3 {
             font-size: 16px;
@@ -367,8 +368,26 @@
                 );
                 return;
             }
-            loadCategories().then(() => loadPlaces());
-            loadLikes();
+
+            // Прогрев: холостые запросы для ускорения первого свайпа
+            warmup().then(() => {
+                loadCategories().then(() => loadPlaces());
+                loadLikes();
+            });
+        }
+
+        async function warmup() {
+            /** Предзагрузка: прогреваем туннель и API. */
+            try {
+                await Promise.all([
+                    fetch(`${API_URL}/cities`),
+                    fetch(`${API_URL}/categories`),
+                    fetch(`${API_URL}/likes?user_id=${userId}`),
+                ]);
+                console.log("✅ Прогрев завершён");
+            } catch (e) {
+                console.warn("Прогрев не удался:", e);
+            }
         }
 
         function showError(text) {
@@ -543,9 +562,7 @@
                 </div>
             `;
 
-            // Навешиваем touch-события
             attachSwipeHandlers(card, place);
-
             container.appendChild(card);
         }
 
@@ -562,7 +579,7 @@
 
             const badgeLike = card.querySelector(".swipe-badge.like");
             const badgeSkip = card.querySelector(".swipe-badge.skip");
-            const THRESHOLD = 100;  // пикселей для срабатывания
+            const THRESHOLD = 100;
 
             function startDrag(x, y, id) {
                 startX = x;
@@ -581,13 +598,10 @@
 
                 const dx = currentX - startX;
                 const dy = currentY - startY;
-
-                // Наклон для красоты
                 const rotation = dx * 0.08;
 
                 card.style.transform = `translate(${dx}px, ${dy}px) rotate(${rotation}deg)`;
 
-                // Показываем бейдж
                 const opacity = Math.min(Math.abs(dx) / THRESHOLD, 1);
                 if (dx > 30) {
                     badgeLike.style.opacity = opacity;
@@ -610,22 +624,17 @@
                 const dy = currentY - startY;
 
                 if (Math.abs(dx) > THRESHOLD) {
-                    // Двигаем в сторону
                     const direction = dx > 0 ? 1 : -1;
                     card.style.transform = `translate(${direction * 500}px, ${dy}px) rotate(${direction * 30}deg)`;
                     card.style.opacity = "0";
-
-                    // Лайк или скип
                     swipe(dx > 0);
                 } else {
-                    // Возвращаем на место
                     card.style.transform = "";
                     badgeLike.style.opacity = 0;
                     badgeSkip.style.opacity = 0;
                 }
             }
 
-            // Touch-события (палец)
             card.addEventListener("touchstart", (e) => {
                 const touch = e.touches[0];
                 startDrag(touch.clientX, touch.clientY, "touch");
@@ -637,11 +646,8 @@
                 moveDrag(touch.clientX, touch.clientY);
             }, { passive: true });
 
-            card.addEventListener("touchend", () => {
-                endDrag();
-            });
+            card.addEventListener("touchend", () => endDrag());
 
-            // Mouse-события (мышка, для теста на ПК)
             card.addEventListener("mousedown", (e) => {
                 startDrag(e.clientX, e.clientY, "mouse");
                 e.preventDefault();
@@ -680,18 +686,15 @@
                 likedCount++;
                 document.getElementById("counter").innerText = likedCount;
 
-                try {
-                    await fetch(`${API_URL}/likes`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            user_id: userId,
-                            place_id: place.id,
-                        }),
-                    });
-                } catch (e) {
-                    console.error("Ошибка сохранения лайка:", e);
-                }
+                // НЕ ждём ответа — отправляем в фоне
+                fetch(`${API_URL}/likes`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        place_id: place.id,
+                    }),
+                }).catch(e => console.error("Ошибка сохранения лайка:", e));
             }
 
             currentIndex++;
@@ -728,6 +731,7 @@
                 favorites.forEach(place => {
                     const card = document.createElement("div");
                     card.className = "favorite-card";
+                    card.setAttribute("data-place-id", place.id);
                     card.innerHTML = `
                         <h3>${place.name}</h3>
                         <div class="card-meta">📍 ${place.address || ""}</div>
@@ -747,25 +751,62 @@
             }
         }
 
-        async function removeFavorite(placeId) {
-            try {
-                const resp = await fetch(`${API_URL}/likes`, {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        place_id: placeId,
-                    }),
-                });
-                const data = await resp.json();
+        function removeFavorite(placeId) {
+            // 1. ОПТИМИСТИЧНЫЙ UI: удаляем сразу визуально
+            const card = document.querySelector(
+                `.favorite-card[data-place-id="${placeId}"]`
+            );
 
-                if (data.status === "removed") {
-                    likedCount = Math.max(0, likedCount - 1);
-                    document.getElementById("counter").innerText = likedCount;
+            if (card) {
+                card.style.transform = "translateX(-100%)";
+                card.style.opacity = "0";
+
+                setTimeout(() => {
+                    card.style.height = "0";
+                    card.style.marginBottom = "0";
+                    card.style.padding = "0";
+
+                    setTimeout(() => {
+                        card.remove();
+                        checkEmptyFavorites();
+                    }, 200);
+                }, 100);
+            }
+
+            likedCount = Math.max(0, likedCount - 1);
+            document.getElementById("counter").innerText = likedCount;
+
+            // 2. ЗАПРОС В ФОНЕ
+            fetch(`${API_URL}/likes`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: userId,
+                    place_id: placeId,
+                }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log(`Удаление: ${data.status}`);
+                if (data.status === "error") {
+                    console.error("Сервер не удалил лайк");
+                    loadFavorites();
                 }
-                loadFavorites();
-            } catch (e) {
+            })
+            .catch(e => {
                 console.error("Ошибка удаления лайка:", e);
+                loadFavorites();
+            });
+        }
+
+        function checkEmptyFavorites() {
+            const container = document.getElementById("card-container");
+            const cards = container.querySelectorAll(".favorite-card");
+
+            if (cards.length === 0) {
+                const empty = document.getElementById("empty");
+                empty.innerText = "❤️ У тебя пока нет избранных мест";
+                empty.classList.add("visible");
             }
         }
 
