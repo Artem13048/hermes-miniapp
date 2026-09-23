@@ -146,6 +146,7 @@
             opacity: 0;
             transition: opacity 0.2s ease;
             pointer-events: none;
+            z-index: 10;
         }
         .swipe-badge.like {
             left: 20px;
@@ -202,6 +203,41 @@
         }
         #empty.visible { display: block; }
 
+        /* ============================================
+           СКЕЛЕТОН — показывается во время загрузки
+           ============================================ */
+        .skeleton-card {
+            width: calc(100% - 32px);
+            max-width: 380px;
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+        }
+        .skeleton-img {
+            width: 100%;
+            height: 220px;
+            background: linear-gradient(90deg, #f0f0f2 25%, #e0e0e4 50%, #f0f0f2 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        .skeleton-body { padding: 20px; }
+        .skeleton-line {
+            height: 16px;
+            background: linear-gradient(90deg, #f0f0f2 25%, #e0e0e4 50%, #f0f0f2 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ============================================
+           ИЗБРАННОЕ
+           ============================================ */
         .favorite-card {
             background: #fff;
             border-radius: 16px;
@@ -269,6 +305,9 @@
         let currentIndex = 0;
         let likedCount = 0;
         let currentMode = "swipe";
+
+        // Кэш всех мест города (загружается 1 раз)
+        let allPlacesCache = null;
 
         // ============================================
         // ИНИЦИАЛИЗАЦИЯ
@@ -369,7 +408,7 @@
                 return;
             }
 
-            // Прогрев: холостые запросы для ускорения первого свайпа
+            // Прогрев + предзагрузка мест в кэш
             warmup().then(() => {
                 loadCategories().then(() => loadPlaces());
                 loadLikes();
@@ -377,14 +416,20 @@
         }
 
         async function warmup() {
-            /** Предзагрузка: прогреваем туннель и API. */
+            /** Предзагрузка: прогреваем туннель, API и грузим места в кэш. */
             try {
                 await Promise.all([
                     fetch(`${API_URL}/cities`),
                     fetch(`${API_URL}/categories`),
                     fetch(`${API_URL}/likes?user_id=${userId}`),
                 ]);
-                console.log("✅ Прогрев завершён");
+
+                // Заранее загружаем ВСЕ места города в кэш
+                console.log("📦 Предзагрузка мест...");
+                const resp = await fetch(`${API_URL}/places?city_id=${cityId}`);
+                allPlacesCache = await resp.json();
+                console.log(`✅ Кэш: ${allPlacesCache.length} мест`);
+
             } catch (e) {
                 console.warn("Прогрев не удался:", e);
             }
@@ -457,31 +502,56 @@
             document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
             tabEl.classList.add("active");
             selectedCategoryId = categoryId;
-            loadPlaces();
+            loadPlaces();   // фильтрация локальная — мгновенно
         }
 
         // ============================================
-        // МЕСТА
+        // МЕСТА (с кэшем)
         // ============================================
         async function loadPlaces() {
             const container = document.getElementById("card-container");
             const empty = document.getElementById("empty");
-            container.innerHTML = "";
-            container.style.display = "flex";
-            container.style.overflowY = "hidden";
             empty.classList.remove("visible");
 
+            // Показываем скелетон, если кэша ещё нет
+            if (!allPlacesCache) {
+                container.style.display = "flex";
+                container.style.overflowY = "hidden";
+                container.innerHTML = `
+                    <div class="skeleton-card">
+                        <div class="skeleton-img"></div>
+                        <div class="skeleton-body">
+                            <div class="skeleton-line" style="width: 70%;"></div>
+                            <div class="skeleton-line" style="width: 50%;"></div>
+                            <div class="skeleton-line" style="width: 90%;"></div>
+                            <div class="skeleton-line" style="width: 60%;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
             try {
-                let url = `${API_URL}/places?city_id=${cityId}`;
-                if (selectedCategoryId !== null) {
-                    url += `&category_id=${selectedCategoryId}`;
+                // Если кэша нет — загружаем ОДИН раз все места города
+                if (!allPlacesCache) {
+                    console.log("Загрузка всех мест с API...");
+                    const resp = await fetch(`${API_URL}/places?city_id=${cityId}`);
+                    allPlacesCache = await resp.json();
+                    console.log(`📦 Загружено мест: ${allPlacesCache.length}`);
                 }
 
-                const resp = await fetch(url);
-                places = await resp.json();
-                currentIndex = 0;
+                // Фильтрация локальная — мгновенно
+                if (selectedCategoryId !== null) {
+                    places = allPlacesCache.filter(
+                        p => p.category_id === selectedCategoryId
+                    );
+                } else {
+                    places = allPlacesCache;
+                }
 
-                console.log(`📦 Загружено мест: ${places.length}`);
+                currentIndex = 0;
+                container.innerHTML = "";
+                container.style.display = "flex";
+                container.style.overflowY = "hidden";
 
                 if (places.length === 0) {
                     empty.innerText = "В этой категории пока нет мест";
@@ -721,8 +791,14 @@
                     return;
                 }
 
-                const placesResp = await fetch(`${API_URL}/places?city_id=${cityId}`);
-                const allPlaces = await placesResp.json();
+                // Используем кэш, если есть
+                let allPlaces = allPlacesCache;
+                if (!allPlaces) {
+                    const placesResp = await fetch(`${API_URL}/places?city_id=${cityId}`);
+                    allPlaces = await placesResp.json();
+                    allPlacesCache = allPlaces;
+                }
+
                 const favorites = allPlaces.filter(p => likedIds.includes(p.id));
 
                 container.style.display = "block";
