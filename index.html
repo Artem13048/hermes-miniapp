@@ -29,15 +29,17 @@
         }
         #tabs-mode {
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            flex-wrap: wrap;
         }
         .mode-tab {
-            padding: 6px 12px;
+            padding: 6px 10px;
             border-radius: 12px;
             background: #f0f0f2;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             user-select: none;
+            white-space: nowrap;
         }
         .mode-tab.active {
             background: #222;
@@ -59,7 +61,9 @@
             border-bottom: 1px solid #e0e0e0;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
+            display: none;
         }
+        #tabs.visible { display: block; }
         #tabs::-webkit-scrollbar { display: none; }
         .tab {
             display: inline-block;
@@ -101,10 +105,7 @@
             touch-action: pan-y;
             cursor: grab;
         }
-        .card.dragging {
-            transition: none;
-            cursor: grabbing;
-        }
+        .card.dragging { transition: none; cursor: grabbing; }
         .card img {
             width: 100%;
             height: 220px;
@@ -181,6 +182,7 @@
         .btn-action:active { transform: scale(0.9); }
         .btn-skip { background: #fff; color: #999; }
         .btn-like { background: #ff4d6d; color: #fff; }
+
         #finish-btn {
             margin: 0 16px 16px;
             padding: 16px;
@@ -194,6 +196,7 @@
             display: none;
         }
         #finish-btn.visible { display: block; }
+
         #empty {
             text-align: center;
             padding: 40px;
@@ -203,9 +206,211 @@
         }
         #empty.visible { display: block; }
 
-        /* ============================================
-           СКЕЛЕТОН — показывается во время загрузки
-           ============================================ */
+        /* КАТЕГОРИИ ДЛЯ РЕЖИМА "МАРШРУТ" */
+        #build-category-tabs {
+            background: #fff;
+            padding: 8px 0;
+            overflow-x: auto;
+            white-space: nowrap;
+            border-bottom: 1px solid #e0e0e0;
+            display: none;
+            scrollbar-width: none;
+        }
+        #build-category-tabs.visible { display: block; }
+        #build-category-tabs::-webkit-scrollbar { display: none; }
+
+        /* СПИСОК МЕСТ ДЛЯ МАРШРУТА */
+        #build-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: none;
+        }
+        #build-list.visible { display: block; }
+
+        .build-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .build-card-info { flex: 1; min-width: 0; }
+        .build-card-info h3 {
+            font-size: 15px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .build-card-info .meta {
+            font-size: 12px;
+            color: #888;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .build-card-info .price {
+            font-size: 13px;
+            color: #d63031;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        .btn-add {
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            background: #ff4d6d;
+            color: #fff;
+        }
+        .btn-add.added { background: #2ecc71; }
+        .btn-add:active { transform: scale(0.95); }
+
+        /* ЭКРАН "МОЙ МАРШРУТ" */
+        #my-route-screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: none;
+        }
+        #my-route-screen.visible { display: block; }
+
+        .my-route-item {
+            background: #fff;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .my-route-item-info h3 { font-size: 15px; margin-bottom: 4px; }
+        .my-route-item-info .meta { font-size: 12px; color: #888; }
+        .btn-remove-item {
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: none;
+            background: #ffe0e6;
+            color: #d63031;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #build-bottom-bar {
+            padding: 12px 16px 20px;
+            background: #fff;
+            border-top: 1px solid #e0e0e0;
+            display: none;
+        }
+        #build-bottom-bar.visible { display: block; }
+        #build-bottom-info {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #222;
+            color: #fff;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+
+        /* РЕЗУЛЬТАТ */
+        #result-screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: none;
+        }
+        #result-screen.visible { display: block; }
+
+        /* ПРОФИЛЬ */
+        #profile-screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: none;
+        }
+        #profile-screen.visible { display: block; }
+
+        .profile-header {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .profile-header h2 { font-size: 18px; margin-bottom: 6px; }
+        .profile-header .meta { color: #888; font-size: 13px; }
+
+        .route-item {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .route-item:active { transform: scale(0.98); }
+        .route-item h3 { font-size: 15px; margin-bottom: 6px; }
+        .route-item .meta { font-size: 13px; color: #888; margin-bottom: 6px; }
+        .route-item .stats { font-size: 13px; color: #d63031; font-weight: 600; }
+
+        .section-title {
+            font-size: 14px;
+            color: #888;
+            margin: 16px 0 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* ИЗБРАННОЕ */
+        .favorite-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            width: 100%;
+            overflow: hidden;
+            transition: transform 0.3s ease, opacity 0.3s ease,
+                        height 0.2s ease, margin 0.2s ease, padding 0.2s ease;
+        }
+        .favorite-card h3 { font-size: 16px; margin-bottom: 6px; }
+        .btn-remove {
+            background: #ffe0e6;
+            color: #d63031;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+        .btn-remove:active { transform: scale(0.95); }
+
+        /* СКЕЛЕТОН */
         .skeleton-card {
             width: calc(100% - 32px);
             max-width: 380px;
@@ -234,37 +439,6 @@
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
-
-        /* ============================================
-           ИЗБРАННОЕ
-           ============================================ */
-        .favorite-card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            width: 100%;
-            overflow: hidden;
-            transition: transform 0.3s ease, opacity 0.3s ease,
-                        height 0.2s ease, margin 0.2s ease, padding 0.2s ease;
-        }
-        .favorite-card h3 {
-            font-size: 16px;
-            margin-bottom: 6px;
-        }
-        .btn-remove {
-            background: #ffe0e6;
-            color: #d63031;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 10px;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 10px;
-            font-weight: 600;
-        }
-        .btn-remove:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -272,23 +446,47 @@
         <div id="header">
             <div id="tabs-mode">
                 <span class="mode-tab active" onclick="switchMode('swipe')">Свайп</span>
-                <span class="mode-tab" onclick="switchMode('favorites')">❤️ Избранное</span>
+                <span class="mode-tab" onclick="switchMode('build')">➕</span>
+                <span class="mode-tab" onclick="switchMode('favorites')">❤️</span>
+                <span class="mode-tab" onclick="switchMode('profile')">👤</span>
             </div>
             <span id="counter">0</span>
         </div>
 
+        <!-- Свайп: категории -->
         <div id="tabs"></div>
 
+        <!-- Свайп: карточки -->
         <div id="card-container"></div>
 
-        <div id="empty"></div>
-
+        <!-- Свайп: кнопки -->
         <div id="actions">
             <button class="btn-action btn-skip" onclick="swipe(false)">✕</button>
             <button class="btn-action btn-like" onclick="swipe(true)">❤️</button>
         </div>
 
+        <!-- Свайп: финиш -->
         <button id="finish-btn" onclick="finish()">✨ Сгенерировать маршрут</button>
+
+        <!-- Маршрут: категории -->
+        <div id="build-category-tabs"></div>
+
+        <!-- Маршрут: список мест -->
+        <div id="build-list"></div>
+
+        <!-- Маршрут: мой маршрут -->
+        <div id="my-route-screen"></div>
+
+        <!-- Результат -->
+        <div id="result-screen"></div>
+
+        <!-- Профиль -->
+        <div id="profile-screen"></div>
+
+        <!-- Нижняя панель -->
+        <div id="build-bottom-bar"></div>
+
+        <div id="empty"></div>
     </div>
 
     <script>
@@ -306,8 +504,12 @@
         let likedCount = 0;
         let currentMode = "swipe";
 
-        // Кэш всех мест города (загружается 1 раз)
         let allPlacesCache = null;
+
+        // Состояние "Маршрута"
+        let buildCategoryId = null;
+        let buildPlaces = [];
+        let selectedPlaceIds = [];
 
         // ============================================
         // ИНИЦИАЛИЗАЦИЯ
@@ -321,33 +523,23 @@
             if (userId) {
                 startApp();
             } else {
-                showError(
-                    "Не удалось получить user_id.\n\n" +
-                    "Откройте приложение через кнопку в боте MAX."
-                );
+                showError("Не удалось получить user_id. Откройте через бот.");
             }
         });
 
         async function initParams() {
-            // --- Способ 1: initDataUnsafe ---
             try {
                 const unsafe = window.WebApp?.initDataUnsafe;
                 if (unsafe) {
-                    if (unsafe.user?.id) {
-                        userId = unsafe.user.id;
-                        console.log("✅ user_id из initDataUnsafe:", userId);
-                    }
+                    if (unsafe.user?.id) userId = unsafe.user.id;
                     if (unsafe.start_param) {
                         const [uid, cid] = unsafe.start_param.split(":");
                         if (uid && !userId) userId = parseInt(uid);
                         if (cid) cityId = parseInt(cid);
                     }
                 }
-            } catch (e) {
-                console.error("Ошибка initDataUnsafe:", e);
-            }
+            } catch (e) { console.error(e); }
 
-            // --- Способ 2: initData ---
             if (!userId) {
                 try {
                     const raw = window.WebApp?.initData;
@@ -365,71 +557,54 @@
                             if (cid) cityId = parseInt(cid);
                         }
                     }
-                } catch (e) {
-                    console.error("Ошибка initData:", e);
-                }
+                } catch (e) { console.error(e); }
             }
 
-            // --- Способ 3: URL ---
             if (!userId) {
                 try {
                     const urlParams = new URLSearchParams(window.location.search);
                     const sp = urlParams.get("startapp");
                     if (sp) {
                         const [uid, cid] = sp.split(":");
-                        if (uid) userId = parseInt(uid) || null;
-                        if (cid) cityId = parseInt(cid) || null;
+                        if (uid) userId = parseInt(uid);
+                        if (cid) cityId = parseInt(cid);
                     }
-                } catch (e) {
-                    console.error("Ошибка URL:", e);
-                }
+                } catch (e) { console.error(e); }
             }
 
-            console.log("📊 Итог: user_id =", userId, ", city_id =", cityId);
-
-            // --- city_id из API ---
             if (userId && !cityId) {
                 try {
                     const resp = await fetch(`${API_URL}/user_city?user_id=${userId}`);
                     const data = await resp.json();
                     if (data.city_id) cityId = data.city_id;
-                } catch (e) {
-                    console.error("Ошибка запроса city_id:", e);
-                }
+                } catch (e) { console.error(e); }
             }
+
+            console.log("Итог:", { userId, cityId });
         }
 
         function startApp() {
             if (!cityId) {
-                showError(
-                    "Сначала выберите город в боте.\n\n" +
-                    "Откройте бот, отправьте /start и выберите город."
-                );
+                showError("Сначала выберите город в боте. Отправьте /start.");
                 return;
             }
 
-            // Прогрев + предзагрузка мест в кэш
             warmup().then(() => {
-                loadCategories().then(() => loadPlaces());
+                switchMode("swipe");
                 loadLikes();
             });
         }
 
         async function warmup() {
-            /** Предзагрузка: прогреваем туннель, API и грузим места в кэш. */
             try {
                 await Promise.all([
                     fetch(`${API_URL}/cities`),
                     fetch(`${API_URL}/categories`),
                     fetch(`${API_URL}/likes?user_id=${userId}`),
                 ]);
-
-                // Заранее загружаем ВСЕ места города в кэш
-                console.log("📦 Предзагрузка мест...");
                 const resp = await fetch(`${API_URL}/places?city_id=${cityId}`);
                 allPlacesCache = await resp.json();
                 console.log(`✅ Кэш: ${allPlacesCache.length} мест`);
-
             } catch (e) {
                 console.warn("Прогрев не удался:", e);
             }
@@ -451,32 +626,52 @@
             document.querySelectorAll(".mode-tab").forEach(t => t.classList.remove("active"));
             const tabs = document.querySelectorAll(".mode-tab");
             if (mode === "swipe") tabs[0].classList.add("active");
-            if (mode === "favorites") tabs[1].classList.add("active");
+            if (mode === "build") tabs[1].classList.add("active");
+            if (mode === "favorites") tabs[2].classList.add("active");
+            if (mode === "profile") tabs[3].classList.add("active");
+
+            // Скрываем все экраны
+            document.getElementById("tabs").classList.remove("visible");
+            document.getElementById("card-container").style.display = "none";
+            document.getElementById("actions").style.display = "none";
+            document.getElementById("finish-btn").classList.remove("visible");
+            document.getElementById("build-category-tabs").classList.remove("visible");
+            document.getElementById("build-list").classList.remove("visible");
+            document.getElementById("my-route-screen").classList.remove("visible");
+            document.getElementById("result-screen").classList.remove("visible");
+            document.getElementById("profile-screen").classList.remove("visible");
+            document.getElementById("build-bottom-bar").classList.remove("visible");
+            document.getElementById("empty").classList.remove("visible");
 
             if (mode === "swipe") {
-                document.getElementById("tabs").style.display = "block";
+                document.getElementById("tabs").classList.add("visible");
+                document.getElementById("card-container").style.display = "flex";
                 document.getElementById("actions").style.display = "flex";
-                document.getElementById("finish-btn").classList.remove("visible");
-                loadPlaces();
-            } else {
-                document.getElementById("tabs").style.display = "none";
-                document.getElementById("actions").style.display = "none";
-                document.getElementById("finish-btn").classList.remove("visible");
+                loadCategories().then(() => loadPlaces());
+            } else if (mode === "build") {
+                document.getElementById("build-category-tabs").classList.add("visible");
+                document.getElementById("build-list").classList.add("visible");
+                document.getElementById("build-bottom-bar").classList.add("visible");
+                loadBuildCategories();
+            } else if (mode === "favorites") {
+                document.getElementById("card-container").style.display = "flex";
                 loadFavorites();
+            } else if (mode === "profile") {
+                loadProfile();
             }
         }
 
         // ============================================
-        // КАТЕГОРИИ
+        // РЕЖИМ "СВАЙП"
         // ============================================
         async function loadCategories() {
             try {
-                const resp = await fetch(`${API_URL}/categories`);
-                categories = await resp.json();
+                if (!categories.length) {
+                    const resp = await fetch(`${API_URL}/categories`);
+                    categories = await resp.json();
+                }
                 renderTabs();
-            } catch (e) {
-                console.error("Ошибка загрузки категорий:", e);
-            }
+            } catch (e) { console.error(e); }
         }
 
         function renderTabs() {
@@ -499,93 +694,50 @@
         }
 
         function selectCategory(categoryId, tabEl) {
-            document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+            document.querySelectorAll("#tabs .tab").forEach(t => t.classList.remove("active"));
             tabEl.classList.add("active");
             selectedCategoryId = categoryId;
-            loadPlaces();   // фильтрация локальная — мгновенно
+            loadPlaces();
         }
 
-        // ============================================
-        // МЕСТА (с кэшем)
-        // ============================================
         async function loadPlaces() {
             const container = document.getElementById("card-container");
             const empty = document.getElementById("empty");
             empty.classList.remove("visible");
 
-            // Показываем скелетон, если кэша ещё нет
             if (!allPlacesCache) {
-                container.style.display = "flex";
-                container.style.overflowY = "hidden";
-                container.innerHTML = `
-                    <div class="skeleton-card">
-                        <div class="skeleton-img"></div>
-                        <div class="skeleton-body">
-                            <div class="skeleton-line" style="width: 70%;"></div>
-                            <div class="skeleton-line" style="width: 50%;"></div>
-                            <div class="skeleton-line" style="width: 90%;"></div>
-                            <div class="skeleton-line" style="width: 60%;"></div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            try {
-                // Если кэша нет — загружаем ОДИН раз все места города
-                if (!allPlacesCache) {
-                    console.log("Загрузка всех мест с API...");
+                try {
                     const resp = await fetch(`${API_URL}/places?city_id=${cityId}`);
                     allPlacesCache = await resp.json();
-                    console.log(`📦 Загружено мест: ${allPlacesCache.length}`);
-                }
-
-                // Фильтрация локальная — мгновенно
-                if (selectedCategoryId !== null) {
-                    places = allPlacesCache.filter(
-                        p => p.category_id === selectedCategoryId
-                    );
-                } else {
-                    places = allPlacesCache;
-                }
-
-                currentIndex = 0;
-                container.innerHTML = "";
-                container.style.display = "flex";
-                container.style.overflowY = "hidden";
-
-                if (places.length === 0) {
-                    empty.innerText = "В этой категории пока нет мест";
-                    empty.classList.add("visible");
-                    document.getElementById("actions").style.display = "none";
-                    return;
-                }
-
-                document.getElementById("actions").style.display = "flex";
-                renderNextCard();
-            } catch (e) {
-                console.error("Ошибка загрузки мест:", e);
-                empty.innerText = "Ошибка загрузки мест";
-                empty.classList.add("visible");
+                } catch (e) { console.error(e); return; }
             }
+
+            places = selectedCategoryId === null
+                ? allPlacesCache
+                : allPlacesCache.filter(p => p.category_id === selectedCategoryId);
+
+            currentIndex = 0;
+
+            if (places.length === 0) {
+                empty.innerText = "В этой категории пока нет мест";
+                empty.classList.add("visible");
+                document.getElementById("actions").style.display = "none";
+                return;
+            }
+
+            document.getElementById("actions").style.display = "flex";
+            renderNextCard();
         }
 
-        // ============================================
-        // ЛАЙКИ
-        // ============================================
         async function loadLikes() {
             try {
                 const resp = await fetch(`${API_URL}/likes?user_id=${userId}`);
                 const data = await resp.json();
                 likedCount = data.count || 0;
                 document.getElementById("counter").innerText = likedCount;
-            } catch (e) {
-                console.error("Ошибка загрузки лайков:", e);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        // ============================================
-        // КАРТОЧКА
-        // ============================================
         function renderNextCard() {
             const container = document.getElementById("card-container");
             container.innerHTML = "";
@@ -636,14 +788,8 @@
             container.appendChild(card);
         }
 
-        // ============================================
-        // СВАЙП ПАЛЬЦЕМ / МЫШКОЙ
-        // ============================================
         function attachSwipeHandlers(card, place) {
-            let startX = 0;
-            let startY = 0;
-            let currentX = 0;
-            let currentY = 0;
+            let startX = 0, startY = 0, currentX = 0, currentY = 0;
             let isDragging = false;
             let pointerId = null;
 
@@ -652,10 +798,8 @@
             const THRESHOLD = 100;
 
             function startDrag(x, y, id) {
-                startX = x;
-                startY = y;
-                currentX = x;
-                currentY = y;
+                startX = x; startY = y;
+                currentX = x; currentY = y;
                 isDragging = true;
                 pointerId = id;
                 card.classList.add("dragging");
@@ -663,13 +807,10 @@
 
             function moveDrag(x, y) {
                 if (!isDragging) return;
-                currentX = x;
-                currentY = y;
-
+                currentX = x; currentY = y;
                 const dx = currentX - startX;
                 const dy = currentY - startY;
                 const rotation = dx * 0.08;
-
                 card.style.transform = `translate(${dx}px, ${dy}px) rotate(${rotation}deg)`;
 
                 const opacity = Math.min(Math.abs(dx) / THRESHOLD, 1);
@@ -689,7 +830,6 @@
                 if (!isDragging) return;
                 isDragging = false;
                 card.classList.remove("dragging");
-
                 const dx = currentX - startX;
                 const dy = currentY - startY;
 
@@ -709,39 +849,27 @@
                 const touch = e.touches[0];
                 startDrag(touch.clientX, touch.clientY, "touch");
             }, { passive: true });
-
             card.addEventListener("touchmove", (e) => {
                 if (!isDragging) return;
                 const touch = e.touches[0];
                 moveDrag(touch.clientX, touch.clientY);
             }, { passive: true });
-
             card.addEventListener("touchend", () => endDrag());
 
             card.addEventListener("mousedown", (e) => {
                 startDrag(e.clientX, e.clientY, "mouse");
                 e.preventDefault();
             });
-
             document.addEventListener("mousemove", (e) => {
-                if (isDragging && pointerId === "mouse") {
-                    moveDrag(e.clientX, e.clientY);
-                }
+                if (isDragging && pointerId === "mouse") moveDrag(e.clientX, e.clientY);
             });
-
             document.addEventListener("mouseup", () => {
-                if (isDragging && pointerId === "mouse") {
-                    endDrag();
-                }
+                if (isDragging && pointerId === "mouse") endDrag();
             });
         }
 
-        // ============================================
-        // СВАЙП (кнопки и логика)
-        // ============================================
         async function swipe(liked) {
             if (currentIndex >= places.length) return;
-
             const place = places[currentIndex];
             const card = document.querySelector(".card");
 
@@ -755,16 +883,11 @@
             if (liked) {
                 likedCount++;
                 document.getElementById("counter").innerText = likedCount;
-
-                // НЕ ждём ответа — отправляем в фоне
                 fetch(`${API_URL}/likes`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        place_id: place.id,
-                    }),
-                }).catch(e => console.error("Ошибка сохранения лайка:", e));
+                    body: JSON.stringify({ user_id: userId, place_id: place.id }),
+                }).catch(e => console.error(e));
             }
 
             currentIndex++;
@@ -772,130 +895,118 @@
         }
 
         // ============================================
-        // ИЗБРАННОЕ
+        // РЕЖИМ "МАРШРУТ"
         // ============================================
-        async function loadFavorites() {
-            const container = document.getElementById("card-container");
-            const empty = document.getElementById("empty");
-            container.innerHTML = "";
-            empty.classList.remove("visible");
-
+        async function loadBuildCategories() {
             try {
-                const likesResp = await fetch(`${API_URL}/likes?user_id=${userId}`);
-                const likesData = await likesResp.json();
-                const likedIds = likesData.place_ids || [];
-
-                if (likedIds.length === 0) {
-                    empty.innerText = "❤️ У тебя пока нет избранных мест";
-                    empty.classList.add("visible");
-                    return;
+                if (!categories.length) {
+                    const resp = await fetch(`${API_URL}/categories`);
+                    categories = await resp.json();
                 }
 
-                // Используем кэш, если есть
-                let allPlaces = allPlacesCache;
-                if (!allPlaces) {
-                    const placesResp = await fetch(`${API_URL}/places?city_id=${cityId}`);
-                    allPlaces = await placesResp.json();
-                    allPlacesCache = allPlaces;
-                }
+                const tabsEl = document.getElementById("build-category-tabs");
+                tabsEl.innerHTML = "";
 
-                const favorites = allPlaces.filter(p => likedIds.includes(p.id));
+                const allTab = document.createElement("div");
+                allTab.className = "tab" + (buildCategoryId === null ? " active" : "");
+                allTab.innerText = "Все";
+                allTab.onclick = () => selectBuildCategory(null);
+                tabsEl.appendChild(allTab);
 
-                container.style.display = "block";
-                container.style.overflowY = "auto";
-
-                favorites.forEach(place => {
-                    const card = document.createElement("div");
-                    card.className = "favorite-card";
-                    card.setAttribute("data-place-id", place.id);
-                    card.innerHTML = `
-                        <h3>${place.name}</h3>
-                        <div class="card-meta">📍 ${place.address || ""}</div>
-                        <div class="card-price">
-                            ${place.price === 0 ? "Бесплатно" : `${place.price} ₽`}
-                        </div>
-                        <button class="btn-remove" onclick="removeFavorite(${place.id})">
-                            ❌ Убрать из избранного
-                        </button>
-                    `;
-                    container.appendChild(card);
+                categories.forEach(cat => {
+                    const tab = document.createElement("div");
+                    tab.className = "tab" + (buildCategoryId === cat.id ? " active" : "");
+                    tab.innerText = cat.name;
+                    tab.onclick = () => selectBuildCategory(cat.id);
+                    tabsEl.appendChild(tab);
                 });
-            } catch (e) {
-                console.error("Ошибка загрузки избранного:", e);
-                empty.innerText = "Ошибка загрузки избранного";
-                empty.classList.add("visible");
-            }
+
+                renderBuildList();
+            } catch (e) { console.error(e); }
         }
 
-        function removeFavorite(placeId) {
-            // 1. ОПТИМИСТИЧНЫЙ UI: удаляем сразу визуально
-            const card = document.querySelector(
-                `.favorite-card[data-place-id="${placeId}"]`
-            );
+        function selectBuildCategory(categoryId) {
+            buildCategoryId = categoryId;
+            loadBuildCategories();
+        }
 
-            if (card) {
-                card.style.transform = "translateX(-100%)";
-                card.style.opacity = "0";
+        async function renderBuildList() {
+            const container = document.getElementById("build-list");
+            container.innerHTML = "";
 
-                setTimeout(() => {
-                    card.style.height = "0";
-                    card.style.marginBottom = "0";
-                    card.style.padding = "0";
-
-                    setTimeout(() => {
-                        card.remove();
-                        checkEmptyFavorites();
-                    }, 200);
-                }, 100);
+            if (!allPlacesCache) {
+                try {
+                    const resp = await fetch(`${API_URL}/places?city_id=${cityId}`);
+                    allPlacesCache = await resp.json();
+                } catch (e) { console.error(e); return; }
             }
 
-            likedCount = Math.max(0, likedCount - 1);
-            document.getElementById("counter").innerText = likedCount;
+            buildPlaces = buildCategoryId === null
+                ? allPlacesCache
+                : allPlacesCache.filter(p => p.category_id === buildCategoryId);
 
-            // 2. ЗАПРОС В ФОНЕ
-            fetch(`${API_URL}/likes`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    user_id: userId,
-                    place_id: placeId,
-                }),
-            })
-            .then(r => r.json())
-            .then(data => {
-                console.log(`Удаление: ${data.status}`);
-                if (data.status === "error") {
-                    console.error("Сервер не удалил лайк");
-                    loadFavorites();
-                }
-            })
-            .catch(e => {
-                console.error("Ошибка удаления лайка:", e);
-                loadFavorites();
+            if (buildPlaces.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:#888;">В этой категории нет мест</div>`;
+                return;
+            }
+
+            buildPlaces.forEach(place => {
+                const isAdded = selectedPlaceIds.includes(place.id);
+                const card = document.createElement("div");
+                card.className = "build-card";
+                card.innerHTML = `
+                    <div class="build-card-info">
+                        <h3>${place.name}</h3>
+                        <div class="meta">📍 ${place.address || ""}</div>
+                        <div class="price">${place.price === 0 ? "Бесплатно" : `${place.price} ₽`}</div>
+                    </div>
+                    <button class="btn-add ${isAdded ? 'added' : ''}"
+                            onclick="toggleAddPlace(${place.id})">
+                        ${isAdded ? '✓ Добавлено' : '➕ Добавить'}
+                    </button>
+                `;
+                container.appendChild(card);
             });
+
+            updateBuildBottomBar();
         }
 
-        function checkEmptyFavorites() {
-            const container = document.getElementById("card-container");
-            const cards = container.querySelectorAll(".favorite-card");
-
-            if (cards.length === 0) {
-                const empty = document.getElementById("empty");
-                empty.innerText = "❤️ У тебя пока нет избранных мест";
-                empty.classList.add("visible");
-            }
-        }
-
-        // ============================================
-        // ФИНАЛИЗАЦИЯ
-        // ============================================
-        function finish() {
-            if (window.WebApp?.close) {
-                window.WebApp.close();
+        function toggleAddPlace(placeId) {
+            const idx = selectedPlaceIds.indexOf(placeId);
+            if (idx === -1) {
+                selectedPlaceIds.push(placeId);
             } else {
-                alert("Маршрут готов! Вернитесь в бот и нажмите «Построить маршрут».");
+                selectedPlaceIds.splice(idx, 1);
             }
+            renderBuildList();
         }
-    </script>
-</body>
-</html>
+
+        function updateBuildBottomBar() {
+            const count = selectedPlaceIds.length;
+            const bar = document.getElementById("build-bottom-bar");
+            bar.innerHTML = `
+                <div id="build-bottom-info">Выбрано: ${count} мест</div>
+                <button class="btn-primary" onclick="goToMyRoute()">🗺 Перейти к маршруту</button>
+            `;
+        }
+
+        function goToMyRoute() {
+            if (selectedPlaceIds.length === 0) {
+                alert("Добавьте хотя бы одно место");
+                return;
+            }
+            renderMyRoute();
+        }
+
+        function renderMyRoute() {
+            document.getElementById("build-category-tabs").classList.remove("visible");
+            document.getElementById("build-list").classList.remove("visible");
+            document.getElementById("my-route-screen").classList.add("visible");
+
+            const container = document.getElementById("my-route-screen");
+            container.innerHTML = "";
+
+            const placesMap = {};
+            (allPlacesCache || []).forEach(p => placesMap[p.id] = p);
+
+            selectedPlaceIds
