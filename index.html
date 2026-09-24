@@ -1009,4 +1009,372 @@
             const placesMap = {};
             (allPlacesCache || []).forEach(p => placesMap[p.id] = p);
 
-            selectedPlaceIds
+            selectedPlaceIds.forEach((pid, index) => {
+                const place = placesMap[pid];
+                if (!place) return;
+
+                const item = document.createElement("div");
+                item.className = "my-route-item";
+                item.innerHTML = `
+                    <div class="my-route-item-info">
+                        <h3>${index + 1}. ${place.name}</h3>
+                        <div class="meta">📍 ${place.address || ""}</div>
+                    </div>
+                    <button class="btn-remove-item" onclick="removeFromMyRoute(${place.id})">
+                        ❌
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+
+            const bar = document.getElementById("build-bottom-bar");
+            bar.innerHTML = `
+                <div id="build-bottom-info">Выбрано: ${selectedPlaceIds.length} мест</div>
+                <button class="btn-primary" onclick="submitMyRoute()">✅ Составить маршрут</button>
+            `;
+        }
+
+        function removeFromMyRoute(placeId) {
+            const idx = selectedPlaceIds.indexOf(placeId);
+            if (idx !== -1) selectedPlaceIds.splice(idx, 1);
+            renderMyRoute();
+        }
+
+        async function submitMyRoute() {
+            if (selectedPlaceIds.length === 0) {
+                alert("Добавьте хотя бы одно место");
+                return;
+            }
+
+            const bar = document.getElementById("build-bottom-bar");
+            bar.innerHTML = `<div style="text-align:center; padding:10px;">⏳ Строю маршрут...</div>`;
+
+            try {
+                const resp = await fetch(`${API_URL}/route/generate`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        place_ids: selectedPlaceIds,
+                    }),
+                });
+
+                const data = await resp.json();
+
+                if (data.status !== "ok") {
+                    alert("Ошибка: " + (data.message || "неизвестная"));
+                    renderMyRoute();
+                    return;
+                }
+
+                await saveRouteToHistory(data);
+                showRouteResult(data);
+
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка соединения");
+                renderMyRoute();
+            }
+        }
+
+        function showRouteResult(data) {
+            document.getElementById("my-route-screen").classList.remove("visible");
+            document.getElementById("build-bottom-bar").classList.remove("visible");
+            document.getElementById("result-screen").classList.add("visible");
+
+            const container = document.getElementById("result-screen");
+            container.innerHTML = "";
+
+            let html = `
+                <div style="text-align:center; padding:20px 0;">
+                    <h2 style="font-size:20px; margin-bottom:8px;">🎉 Маршрут готов!</h2>
+                    <p style="color:#666; margin-bottom:16px;">
+                        ${data.places_count} мест ·
+                        ${data.total_distance} км ·
+                        ${data.total_price} ₽
+                    </p>
+                </div>
+            `;
+
+            data.route.forEach((place, index) => {
+                const priceText = place.price === 0 ? "Бесплатно" : `${place.price} ₽`;
+                html += `
+                    <div class="my-route-item" style="display:block;">
+                        <h3 style="margin-bottom:6px;">${index + 1}. ${place.name}</h3>
+                        <div class="meta" style="color:#888; font-size:13px; margin-bottom:4px;">
+                            📍 ${place.address || ""}
+                        </div>
+                        <div style="color:#d63031; font-weight:600; font-size:14px;">💰 ${priceText}</div>
+                        ${place.working_hours ? `<div style="color:#888; font-size:13px; margin-top:4px;">⏰ ${place.working_hours}</div>` : ""}
+                    </div>
+                `;
+            });
+
+            html += `
+                <button class="btn-primary" style="margin-top:16px;" onclick="closeResult()">
+                    🏠 Вернуться
+                </button>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function closeResult() {
+            selectedPlaceIds = [];
+            buildCategoryId = null;
+            switchMode("build");
+        }
+
+        // ============================================
+        // СОХРАНЕНИЕ В ИСТОРИЮ
+        // ============================================
+        async function saveRouteToHistory(data) {
+            try {
+                let cityName = "";
+                try {
+                    const cityResp = await fetch(`${API_URL}/cities`);
+                    const cities = await cityResp.json();
+                    const city = cities.find(c => c.id === cityId);
+                    if (city) cityName = city.name;
+                } catch (e) { /* ignore */ }
+
+                const resp = await fetch(`${API_URL}/routes/save`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        city_id: cityId,
+                        city_name: cityName,
+                        places: data.route,
+                        total_distance: data.total_distance,
+                        total_price: data.total_price,
+                    }),
+                });
+                const result = await resp.json();
+                if (result.status === "ok") {
+                    console.log("✅ Маршрут сохранён, id =", result.route_id);
+                }
+            } catch (e) {
+                console.error("Не удалось сохранить:", e);
+            }
+        }
+
+        // ============================================
+        // ПРОФИЛЬ
+        // ============================================
+        async function loadProfile() {
+            document.getElementById("profile-screen").classList.add("visible");
+
+            const container = document.getElementById("profile-screen");
+            container.innerHTML = `<div style="text-align:center; padding:40px;">⏳ Загрузка...</div>`;
+
+            try {
+                const resp = await fetch(`${API_URL}/routes/list?user_id=${userId}`);
+                const routes = await resp.json();
+
+                let html = `
+                    <div class="profile-header">
+                        <h2>👤 Ваш профиль</h2>
+                        <div class="meta">ID: ${userId}</div>
+                        <div class="meta">Маршрутов: ${routes.length}</div>
+                    </div>
+                `;
+
+                if (routes.length === 0) {
+                    html += `
+                        <div style="text-align:center; padding:40px; color:#888;">
+                            У вас пока нет сохранённых маршрутов.<br><br>
+                            Создайте первый маршрут во вкладке «➕».
+                        </div>
+                    `;
+                } else {
+                    html += `<div class="section-title">Мои маршруты</div>`;
+                    routes.forEach(route => {
+                        const date = route.created_at
+                            ? new Date(route.created_at).toLocaleString("ru-RU", {
+                                day: "2-digit", month: "2-digit",
+                                hour: "2-digit", minute: "2-digit",
+                            })
+                            : "—";
+
+                        html += `
+                            <div class="route-item" onclick="openSavedRoute(${route.id})">
+                                <h3>${route.title || "Маршрут"}</h3>
+                                <div class="meta">📅 ${date}${route.city_name ? ' · 🏙 ' + route.city_name : ''}</div>
+                                <div class="stats">
+                                    📍 ${route.places_count} мест ·
+                                    🚶 ${route.total_distance} км ·
+                                    💰 ${route.total_price} ₽
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                container.innerHTML = html;
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:#888;">Ошибка загрузки</div>`;
+            }
+        }
+
+        async function openSavedRoute(routeId) {
+            try {
+                const resp = await fetch(`${API_URL}/routes/${routeId}`);
+                const route = await resp.json();
+
+                document.getElementById("profile-screen").classList.remove("visible");
+                document.getElementById("result-screen").classList.add("visible");
+
+                const container = document.getElementById("result-screen");
+                container.innerHTML = "";
+
+                const date = route.created_at
+                    ? new Date(route.created_at).toLocaleString("ru-RU")
+                    : "—";
+
+                let html = `
+                    <div style="text-align:center; padding:20px 0;">
+                        <h2 style="font-size:20px; margin-bottom:8px;">${route.title || "Маршрут"}</h2>
+                        <p style="color:#666; margin-bottom:6px;">📅 ${date}</p>
+                        ${route.city_name ? `<p style="color:#666; margin-bottom:6px;">🏙 ${route.city_name}</p>` : ''}
+                        <p style="color:#666; margin-bottom:16px;">
+                            ${route.places_count} мест · ${route.total_distance} км · ${route.total_price} ₽
+                        </p>
+                    </div>
+                `;
+
+                route.places.forEach((place, index) => {
+                    const priceText = place.price === 0 ? "Бесплатно" : `${place.price} ₽`;
+                    html += `
+                        <div class="my-route-item" style="display:block;">
+                            <h3 style="margin-bottom:6px;">${index + 1}. ${place.name}</h3>
+                            <div class="meta" style="color:#888; font-size:13px; margin-bottom:4px;">
+                                📍 ${place.address || ""}
+                            </div>
+                            <div style="color:#d63031; font-weight:600; font-size:14px;">💰 ${priceText}</div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    <div style="display:flex; gap:10px; margin-top:16px;">
+                        <button class="btn-primary" style="flex:1; background:#ffe0e6; color:#d63031;"
+                                onclick="deleteSavedRoute(${route.id})">🗑 Удалить</button>
+                        <button class="btn-primary" style="flex:1;" onclick="closeSavedRoute()">← Назад</button>
+                    </div>
+                `;
+
+                container.innerHTML = html;
+            } catch (e) {
+                console.error(e);
+                alert("Не удалось открыть");
+            }
+        }
+
+        function closeSavedRoute() {
+            document.getElementById("result-screen").classList.remove("visible");
+            loadProfile();
+        }
+
+        async function deleteSavedRoute(routeId) {
+            if (!confirm("Удалить этот маршрут?")) return;
+            try {
+                const resp = await fetch(`${API_URL}/routes/${routeId}`, { method: "DELETE" });
+                const data = await resp.json();
+                if (data.status === "removed") closeSavedRoute();
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка удаления");
+            }
+        }
+
+        // ============================================
+        // ИЗБРАННОЕ
+        // ============================================
+        async function loadFavorites() {
+            const container = document.getElementById("card-container");
+            const empty = document.getElementById("empty");
+            container.innerHTML = "";
+            empty.classList.remove("visible");
+
+            try {
+                const likesResp = await fetch(`${API_URL}/likes?user_id=${userId}`);
+                const likesData = await likesResp.json();
+                const likedIds = likesData.place_ids || [];
+
+                if (likedIds.length === 0) {
+                    empty.innerText = "❤️ У тебя пока нет избранных мест";
+                    empty.classList.add("visible");
+                    return;
+                }
+
+                if (!allPlacesCache) {
+                    const placesResp = await fetch(`${API_URL}/places?city_id=${cityId}`);
+                    allPlacesCache = await placesResp.json();
+                }
+
+                const favorites = allPlacesCache.filter(p => likedIds.includes(p.id));
+
+                container.style.display = "block";
+                container.style.overflowY = "auto";
+
+                favorites.forEach(place => {
+                    const card = document.createElement("div");
+                    card.className = "favorite-card";
+                    card.setAttribute("data-place-id", place.id);
+                    card.innerHTML = `
+                        <h3>${place.name}</h3>
+                        <div class="card-meta">📍 ${place.address || ""}</div>
+                        <div class="card-price">${place.price === 0 ? "Бесплатно" : `${place.price} ₽`}</div>
+                        <button class="btn-remove" onclick="removeFavorite(${place.id})">
+                            ❌ Убрать из избранного
+                        </button>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (e) {
+                console.error("Ошибка загрузки избранного:", e);
+            }
+        }
+
+        async function removeFavorite(placeId) {
+            const card = document.querySelector(`.favorite-card[data-place-id="${placeId}"]`);
+            if (card) {
+                card.style.transform = "translateX(-100%)";
+                card.style.opacity = "0";
+                setTimeout(() => {
+                    card.style.height = "0";
+                    card.style.marginBottom = "0";
+                    card.style.padding = "0";
+                    setTimeout(() => {
+                        card.remove();
+                    }, 200);
+                }, 100);
+            }
+
+            likedCount = Math.max(0, likedCount - 1);
+            document.getElementById("counter").innerText = likedCount;
+
+            try {
+                await fetch(`${API_URL}/likes`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user_id: userId, place_id: placeId }),
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        // ============================================
+        // ФИНАЛИЗАЦИЯ
+        // ============================================
+        function finish() {
+            if (window.WebApp?.close) {
+                window.WebApp.close();
+            } else {
+                alert("Маршрут готов! Вернитесь в бот.");
+            }
+        }
+    </script>
+</body>
+</html>
