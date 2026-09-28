@@ -19,75 +19,83 @@
             height: 100vh;
         }
 
-        /* ====== ОБНОВЛЁННАЯ ШАПКА ====== */
+        /* ====== ШАПКА ====== */
         #header {
-            padding: 10px 12px 8px;
+            padding: 10px 12px;
             background: #fff;
             border-bottom: 1px solid #e0e0e0;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            font-size: 15px;
-        }
-        #tabs-mode {
-            display: flex;
-            gap: 4px;
-            flex-wrap: nowrap;
-            width: 100%;
-            max-width: 480px;
-            background: #f5f5f7;
-            border-radius: 14px;
-            padding: 4px;
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-        #tabs-mode::-webkit-scrollbar { display: none; }
-        .mode-tab {
+            gap: 10px;
             position: relative;
-            flex: 1 1 0;
-            min-width: 0;
+            z-index: 20;
+        }
+        .header-btn {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            border: none;
+            background: #f5f5f7;
+            color: #222;
+            font-size: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 8px 10px;
-            border-radius: 10px;
-            background: transparent;
-            border: none;
-            color: #666;
-            font-size: 13px;
-            font-weight: 500;
-            font-family: inherit;
             cursor: pointer;
-            user-select: none;
-            white-space: nowrap;
-            transition: background 0.18s ease, color 0.18s ease, transform 0.1s ease;
+            transition: background 0.15s ease, transform 0.1s ease;
             -webkit-tap-highlight-color: transparent;
+            flex-shrink: 0;
         }
-        .mode-tab:hover { color: #222; }
-        .mode-tab:active { transform: scale(0.97); }
-        .mode-tab.active {
-            background: #fff;
-            color: #111;
+        .header-btn:hover { background: #ececf0; }
+        .header-btn:active { transform: scale(0.94); }
+        .header-btn.active {
+            background: #222;
+            color: #fff;
+        }
+        #burger-btn .burger-lines {
+            width: 18px;
+            height: 12px;
+            position: relative;
+        }
+        #burger-btn .burger-lines span {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            border-radius: 2px;
+            background: currentColor;
+            transition: transform 0.2s ease, opacity 0.2s ease, top 0.2s ease;
+        }
+        #burger-btn .burger-lines span:nth-child(1) { top: 0; }
+        #burger-btn .burger-lines span:nth-child(2) { top: 5px; }
+        #burger-btn .burger-lines span:nth-child(3) { top: 10px; }
+        #burger-btn.open .burger-lines span:nth-child(1) {
+            top: 5px;
+            transform: rotate(45deg);
+        }
+        #burger-btn.open .burger-lines span:nth-child(2) {
+            opacity: 0;
+        }
+        #burger-btn.open .burger-lines span:nth-child(3) {
+            top: 5px;
+            transform: rotate(-45deg);
+        }
+        #header-title {
+            flex: 1;
+            text-align: center;
+            font-size: 16px;
             font-weight: 700;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-        }
-        .mode-tab-icon {
-            font-size: 15px;
-            line-height: 1;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .mode-tab-label {
-            display: inline-block;
+            color: #111;
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
         }
-        .mode-tab-badge {
+        #burger-badge {
             position: absolute;
-            top: -2px;
-            right: -2px;
+            top: -3px;
+            right: -3px;
             min-width: 18px;
             height: 18px;
             padding: 0 5px;
@@ -98,15 +106,121 @@
             font-weight: 700;
             line-height: 18px;
             text-align: center;
-            box-shadow: 0 0 0 2px #f5f5f7;
+            box-shadow: 0 0 0 2px #fff;
             box-sizing: border-box;
         }
-        @media (max-width: 360px) {
-            .mode-tab-label { display: none; }
-            .mode-tab { padding: 8px 6px; }
-            .mode-tab-icon { font-size: 17px; }
+
+        /* ====== ВЫПЛЫВАЮЩЕЕ МЕНЮ ====== */
+        #drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            z-index: 100;
+        }
+        #drawer-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #drawer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 78%;
+            max-width: 320px;
+            background: #fff;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+            transform: translateX(-100%);
+            transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+            z-index: 101;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0 24px;
+        }
+        #drawer.open {
+            transform: translateX(0);
+        }
+        .drawer-header {
+            padding: 0 20px 16px;
+            border-bottom: 1px solid #f0f0f2;
+            margin-bottom: 12px;
+        }
+        .drawer-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111;
+        }
+        .drawer-header p {
+            font-size: 13px;
+            color: #888;
+            margin-top: 4px;
+        }
+        .drawer-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 20px;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            font-family: inherit;
+            color: #333;
+            cursor: pointer;
+            text-align: left;
+            width: 100%;
+            transition: background 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .drawer-item:hover { background: #f5f5f7; }
+        .drawer-item:active { background: #ececf0; }
+        .drawer-item.active {
+            background: #f5f5f7;
+            color: #111;
+            font-weight: 700;
+        }
+        .drawer-item.active::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 10px;
+            bottom: 10px;
+            width: 4px;
+            border-radius: 0 4px 4px 0;
+            background: #ff4d6d;
+        }
+        .drawer-item-icon {
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .drawer-item-label {
+            flex: 1;
+        }
+        .drawer-item-badge {
+            min-width: 22px;
+            height: 22px;
+            padding: 0 7px;
+            border-radius: 11px;
+            background: #ff4d6d;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 22px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .drawer-divider {
+            height: 1px;
+            background: #f0f0f2;
+            margin: 12px 20px;
         }
 
+        /* ====== КАТЕГОРИИ СВАЙПА ====== */
         #tabs {
             background: #fff;
             padding: 8px 0;
@@ -260,7 +374,8 @@
             line-height: 1.5;
         }
         #empty.visible { display: block; }
-        /* КАТЕГОРИИ ДЛЯ РЕЖИМА "МАРШРУТ" */
+
+        /* ====== КАТЕГОРИИ МАРШРУТА ====== */
         #build-category-tabs {
             background: #fff;
             padding: 8px 0;
@@ -272,7 +387,8 @@
         }
         #build-category-tabs.visible { display: block; }
         #build-category-tabs::-webkit-scrollbar { display: none; }
-        /* СПИСОК МЕСТ ДЛЯ МАРШРУТА */
+
+        /* ====== СПИСОК МЕСТ МАРШРУТА ====== */
         #build-list {
             flex: 1;
             overflow-y: auto;
@@ -396,7 +512,8 @@
             color: #666;
             white-space: pre-line;
         }
-        /* ЭКРАН "МОЙ МАРШРУТ" */
+
+        /* ====== ЭКРАН "МОЙ МАРШРУТ" ====== */
         #my-route-screen {
             flex: 1;
             overflow-y: auto;
@@ -452,7 +569,8 @@
             color: #fff;
         }
         .btn-primary:active { transform: scale(0.98); }
-        /* РЕЗУЛЬТАТ */
+
+        /* ====== РЕЗУЛЬТАТ ====== */
         #result-screen {
             flex: 1;
             overflow-y: auto;
@@ -460,7 +578,8 @@
             display: none;
         }
         #result-screen.visible { display: block; }
-        /* ПРОФИЛЬ */
+
+        /* ====== ПРОФИЛЬ ====== */
         #profile-screen {
             flex: 1;
             overflow-y: auto;
@@ -498,7 +617,8 @@
             font-weight: 600;
             text-transform: uppercase;
         }
-        /* ИЗБРАННОЕ */
+
+        /* ====== ИЗБРАННОЕ ====== */
         .favorite-card {
             background: #fff;
             border-radius: 16px;
@@ -529,7 +649,8 @@
             font-weight: 600;
         }
         .btn-remove:active { transform: scale(0.95); }
-        /* ИНФОРМАЦИОННОЕ ОКНО */
+
+        /* ====== ИНФОРМАЦИОННОЕ ОКНО ====== */
         #info-modal {
             position: fixed;
             inset: 0;
@@ -573,60 +694,52 @@
             cursor: pointer;
         }
         .info-modal-button:active { transform: scale(0.98); }
-        /* СКЕЛЕТОН */
-        .skeleton-card {
-            width: calc(100% - 32px);
-            max-width: 380px;
-            background: #fff;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-        }
-        .skeleton-img {
-            width: 100%;
-            height: 220px;
-            background: linear-gradient(90deg, #f0f0f2 25%, #e0e0e4 50%, #f0f0f2 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-        }
-        .skeleton-body { padding: 20px; }
-        .skeleton-line {
-            height: 16px;
-            background: linear-gradient(90deg, #f0f0f2 25%, #e0e0e4 50%, #f0f0f2 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: 8px;
-            margin-bottom: 10px;
-        }
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
     </style>
 </head>
 <body>
     <div id="app">
         <div id="header">
-            <nav id="tabs-mode">
-                <button type="button" class="mode-tab active" data-mode="swipe" onclick="switchMode('swipe', event)">
-                    <span class="mode-tab-icon">🎴</span>
-                    <span class="mode-tab-label">Свайп</span>
-                </button>
-                <button type="button" class="mode-tab" data-mode="build" onclick="switchMode('build', event)">
-                    <span class="mode-tab-icon">🗺</span>
-                    <span class="mode-tab-label">Маршрут</span>
-                </button>
-                <button type="button" class="mode-tab" data-mode="favorites" onclick="switchMode('favorites', event)">
-                    <span class="mode-tab-icon">❤️</span>
-                    <span class="mode-tab-label">Избранное</span>
-                    <span id="favorites-badge" class="mode-tab-badge" hidden>0</span>
-                </button>
-                <button type="button" class="mode-tab" data-mode="profile" onclick="switchMode('profile', event)">
-                    <span class="mode-tab-icon">👤</span>
-                    <span class="mode-tab-label">Профиль</span>
-                </button>
-            </nav>
+            <button id="burger-btn" class="header-btn" type="button" aria-label="Меню" onclick="toggleDrawer(event)">
+                <span class="burger-lines">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+                <span id="burger-badge" hidden>0</span>
+            </button>
+            <div id="header-title">Свайп</div>
+            <button id="profile-btn" class="header-btn" type="button" aria-label="Профиль" onclick="switchMode('profile', event)">
+                👤
+            </button>
         </div>
+
+        <!-- Выплывающее меню -->
+        <div id="drawer-overlay" onclick="closeDrawer()"></div>
+        <aside id="drawer" role="navigation" aria-label="Основное меню">
+            <div class="drawer-header">
+                <h2>Hermes.AI</h2>
+                <p>Куда отправимся?</p>
+            </div>
+            <button type="button" class="drawer-item active" data-mode="swipe" onclick="switchMode('swipe', event)">
+                <span class="drawer-item-icon">🎴</span>
+                <span class="drawer-item-label">Свайп</span>
+            </button>
+            <button type="button" class="drawer-item" data-mode="build" onclick="switchMode('build', event)">
+                <span class="drawer-item-icon">🗺</span>
+                <span class="drawer-item-label">Маршрут</span>
+            </button>
+            <button type="button" class="drawer-item" data-mode="favorites" onclick="switchMode('favorites', event)">
+                <span class="drawer-item-icon">❤️</span>
+                <span class="drawer-item-label">Избранное</span>
+                <span id="drawer-favorites-badge" class="drawer-item-badge" hidden>0</span>
+            </button>
+            <div class="drawer-divider"></div>
+            <button type="button" class="drawer-item" data-mode="profile" onclick="switchMode('profile', event)">
+                <span class="drawer-item-icon">👤</span>
+                <span class="drawer-item-label">Профиль</span>
+            </button>
+        </aside>
+
         <!-- Свайп: категории -->
         <div id="tabs"></div>
         <!-- Свайп: карточки -->
@@ -681,6 +794,14 @@
         let buildCategoryId = null;
         let buildPlaces = [];
         let selectedPlaceIds = [];
+
+        const MODE_TITLES = {
+            swipe: "Свайп",
+            build: "Маршрут",
+            favorites: "Избранное",
+            profile: "Профиль"
+        };
+
         // ============================================
         // ИНИЦИАЛИЗАЦИЯ
         // ============================================
@@ -783,14 +904,48 @@
             el.classList.add("visible");
             document.getElementById("actions").style.display = "none";
         }
+
+        // ============================================
+        // ВЫПЛЫВАЮЩЕЕ МЕНЮ
+        // ============================================
+        function openDrawer() {
+            document.getElementById("drawer").classList.add("open");
+            document.getElementById("drawer-overlay").classList.add("visible");
+            document.getElementById("burger-btn").classList.add("open");
+        }
+        function closeDrawer() {
+            document.getElementById("drawer").classList.remove("open");
+            document.getElementById("drawer-overlay").classList.remove("visible");
+            document.getElementById("burger-btn").classList.remove("open");
+        }
+        function toggleDrawer(event) {
+            if (event) event.stopPropagation();
+            const isOpen = document.getElementById("drawer").classList.contains("open");
+            if (isOpen) closeDrawer();
+            else openDrawer();
+        }
+
         // ============================================
         // ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ
         // ============================================
         async function switchMode(mode, event) {
+            if (event) event.stopPropagation();
             currentMode = mode;
-            document.querySelectorAll(".mode-tab").forEach(t => {
+
+            // Обновляем подсветку в меню
+            document.querySelectorAll(".drawer-item").forEach(t => {
                 t.classList.toggle("active", t.dataset.mode === mode);
             });
+
+            // Иконка профиля в шапке — активна, когда открыт профиль
+            document.getElementById("profile-btn").classList.toggle("active", mode === "profile");
+
+            // Заголовок в шапке
+            document.getElementById("header-title").textContent = MODE_TITLES[mode] || "";
+
+            // Закрываем меню после выбора
+            closeDrawer();
+
             // Скрываем все экраны
             document.getElementById("tabs").classList.remove("visible");
             document.getElementById("card-container").style.display = "none";
@@ -803,6 +958,7 @@
             document.getElementById("profile-screen").classList.remove("visible");
             document.getElementById("build-bottom-bar").classList.remove("visible");
             document.getElementById("empty").classList.remove("visible");
+
             if (mode === "swipe") {
                 document.getElementById("tabs").classList.add("visible");
                 document.getElementById("card-container").style.display = "flex";
@@ -820,6 +976,7 @@
                 loadProfile();
             }
         }
+
         // ============================================
         // РЕЖИМ "СВАЙП"
         // ============================================
@@ -886,13 +1043,17 @@
             } catch (e) { console.error(e); }
         }
         function updateFavoritesBadge() {
-            const badge = document.getElementById("favorites-badge");
-            if (!badge) return;
-            if (likedCount > 0) {
-                badge.textContent = likedCount > 99 ? "99+" : String(likedCount);
-                badge.hidden = false;
-            } else {
-                badge.hidden = true;
+            const burgerBadge = document.getElementById("burger-badge");
+            const drawerBadge = document.getElementById("drawer-favorites-badge");
+            const text = likedCount > 99 ? "99+" : String(likedCount);
+            const has = likedCount > 0;
+            if (burgerBadge) {
+                burgerBadge.hidden = !has;
+                if (has) burgerBadge.textContent = text;
+            }
+            if (drawerBadge) {
+                drawerBadge.hidden = !has;
+                if (has) drawerBadge.textContent = text;
             }
         }
         function renderNextCard() {
@@ -1031,6 +1192,7 @@
             currentIndex++;
             setTimeout(renderNextCard, 250);
         }
+
         // ============================================
         // РЕЖИМ "МАРШРУТ"
         // ============================================
@@ -1268,6 +1430,7 @@
             buildCategoryId = null;
             switchMode("build");
         }
+
         // ============================================
         // СОХРАНЕНИЕ В ИСТОРИЮ
         // ============================================
@@ -1300,6 +1463,7 @@
                 console.error("Не удалось сохранить:", e);
             }
         }
+
         // ============================================
         // ПРОФИЛЬ
         // ============================================
@@ -1321,7 +1485,7 @@
                     html += `
                         <div style="text-align:center; padding:40px; color:#888;">
                             У вас пока нет сохранённых маршрутов.<br><br>
-                            Создайте первый маршрут во вкладке «🗺 Маршрут».
+                            Создайте первый маршрут в разделе «Маршрут».
                         </div>
                     `;
                 } else {
@@ -1413,6 +1577,7 @@
                 alert("Ошибка удаления");
             }
         }
+
         // ============================================
         // ИЗБРАННОЕ
         // ============================================
@@ -1507,6 +1672,7 @@
                 });
             } catch (e) { console.error(e); }
         }
+
         // ============================================
         // ФИНАЛИЗАЦИЯ
         // ============================================
