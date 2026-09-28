@@ -260,8 +260,6 @@
             overflow: hidden;
             transition: transform 0.3s ease, opacity 0.3s ease;
             user-select: none;
-            /* pan-y оставляем: разрешаем вертикальную прокрутку,
-               но перехватываем горизонтальный жест через JS */
             touch-action: pan-y;
             cursor: grab;
             flex-shrink: 0;
@@ -712,6 +710,168 @@
             color: #ff4d6d;
             font-weight: 700;
         }
+
+        /* ====== ТУТОРИАЛ ====== */
+        #tutorial-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 2000;
+            animation: tutorialFadeIn 0.3s ease;
+        }
+        #tutorial-overlay.visible {
+            display: flex;
+        }
+
+        @keyframes tutorialFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        .tutorial-card {
+            width: 100%;
+            max-width: 380px;
+            background: #fff;
+            border-radius: 24px;
+            padding: 24px 22px 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: tutorialSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        @keyframes tutorialSlideUp {
+            from { transform: translateY(40px); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        .tutorial-icon {
+            font-size: 56px;
+            text-align: center;
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+
+        .tutorial-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #111;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .tutorial-subtitle {
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .tutorial-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f2;
+        }
+        .tutorial-step:last-of-type {
+            border-bottom: none;
+        }
+
+        .tutorial-step-icon {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 12px;
+            background: #f5f5f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .tutorial-step-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tutorial-step-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #111;
+            margin-bottom: 3px;
+        }
+
+        .tutorial-step-desc {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .tutorial-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin: 16px 0 14px;
+        }
+
+        .tutorial-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ddd;
+            transition: background 0.2s ease, width 0.2s ease;
+        }
+
+        .tutorial-dot.active {
+            background: #ff4d6d;
+            width: 20px;
+            border-radius: 4px;
+        }
+
+        .tutorial-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tutorial-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        .tutorial-btn:active {
+            transform: scale(0.98);
+        }
+
+        .tutorial-btn-skip {
+            background: #f0f0f2;
+            color: #555;
+        }
+
+        .tutorial-btn-next {
+            background: #222;
+            color: #fff;
+        }
+
+        .tutorial-btn-done {
+            background: #ff4d6d;
+            color: #fff;
+        }
+
+        .tutorial-btn-back[hidden] {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -788,6 +948,14 @@
             <button class="info-modal-button" onclick="closeInfoModal()">Хорошо</button>
         </div>
     </div>
+
+    <!-- ТУТОРИАЛ ПРИ ПЕРВОМ ЗАПУСКЕ -->
+    <div id="tutorial-overlay">
+        <div class="tutorial-card" id="tutorial-card">
+            <!-- Содержимое отрисуется в JS -->
+        </div>
+    </div>
+
     <script>
         // ============================================
         // НАСТРОЙКИ
@@ -814,6 +982,127 @@
             profile: "Профиль",
             city: "Выбор города"
         };
+
+        // ============================================
+        // ТУТОРИАЛ (показывается один раз)
+        // ============================================
+        const TUTORIAL_KEY = "hermes_tutorial_shown_v1";
+
+        const TUTORIAL_STEPS = [
+            {
+                icon: "🎴",
+                title: "Свайпай места",
+                desc: "Листай карточки влево и вправо. Свайп вправо — ❤️ место попадёт в избранное, влево — пропустить.",
+            },
+            {
+                icon: "🗺️",
+                title: "Или собери маршрут",
+                desc: "Во вкладке «Маршрут» сам выбери места, которые хочешь посетить, и мы построим маршрут.",
+            },
+            {
+                icon: "❤️",
+                title: "Избранное под рукой",
+                desc: "Всё, что лайкнул — сохраняется в разделе «Избранное». Можно вернуться к этому позже.",
+            },
+            {
+                icon: "🏙️",
+                title: "Меняй город",
+                desc: "В бургер-меню можно сменить город. Места, лайки и маршруты подгрузятся автоматически.",
+            },
+            {
+                icon: "✨",
+                title: "Готово!",
+                desc: "А ещё бот умеет строить маршруты сам — просто напиши ему, что хочешь. Поехали!",
+            },
+        ];
+
+        let tutorialStepIndex = 0;
+
+        function maybeShowTutorial() {
+            try {
+                const shown = localStorage.getItem(TUTORIAL_KEY);
+                if (!shown) {
+                    openTutorial();
+                }
+            } catch (e) {
+                console.warn("localStorage недоступен, туториал пропущен", e);
+            }
+        }
+
+        function openTutorial() {
+            tutorialStepIndex = 0;
+            renderTutorialStep();
+            document.getElementById("tutorial-overlay").classList.add("visible");
+        }
+
+        function closeTutorial() {
+            try {
+                localStorage.setItem(TUTORIAL_KEY, "1");
+            } catch (e) {
+                console.warn("Не удалось сохранить флаг туториала", e);
+            }
+            document.getElementById("tutorial-overlay").classList.remove("visible");
+        }
+
+        function tutorialNext() {
+            if (tutorialStepIndex < TUTORIAL_STEPS.length - 1) {
+                tutorialStepIndex++;
+                renderTutorialStep();
+            } else {
+                closeTutorial();
+            }
+        }
+
+        function tutorialBack() {
+            if (tutorialStepIndex > 0) {
+                tutorialStepIndex--;
+                renderTutorialStep();
+            }
+        }
+
+        function renderTutorialStep() {
+            const step = TUTORIAL_STEPS[tutorialStepIndex];
+            const isFirst = tutorialStepIndex === 0;
+            const isLast = tutorialStepIndex === TUTORIAL_STEPS.length - 1;
+
+            const dots = TUTORIAL_STEPS.map((_, i) =>
+                `<div class="tutorial-dot ${i === tutorialStepIndex ? "active" : ""}"></div>`
+            ).join("");
+
+            const backBtn = isFirst
+                ? ""
+                : `<button class="tutorial-btn tutorial-btn-skip" onclick="tutorialBack()">Назад</button>`;
+
+            const nextBtn = isLast
+                ? `<button class="tutorial-btn tutorial-btn-done" onclick="tutorialNext()">Начать!</button>`
+                : `<button class="tutorial-btn tutorial-btn-next" onclick="tutorialNext()">Далее</button>`;
+
+            const skipBtn = isLast
+                ? ""
+                : `<button class="tutorial-btn tutorial-btn-skip" onclick="closeTutorial()">Пропустить</button>`;
+
+            document.getElementById("tutorial-card").innerHTML = `
+                <div class="tutorial-icon">${step.icon}</div>
+                <div class="tutorial-title">${step.title}</div>
+                <div class="tutorial-subtitle">Шаг ${tutorialStepIndex + 1} из ${TUTORIAL_STEPS.length}</div>
+
+                <div class="tutorial-step">
+                    <div class="tutorial-step-icon">${step.icon}</div>
+                    <div class="tutorial-step-text">
+                        <div class="tutorial-step-title">${step.title}</div>
+                        <div class="tutorial-step-desc">${step.desc}</div>
+                    </div>
+                </div>
+
+                <div class="tutorial-dots">${dots}</div>
+
+                <div class="tutorial-buttons">
+                    ${backBtn}
+                    ${skipBtn}
+                    ${nextBtn}
+                </div>
+            `;
+        }
 
         // ============================================
         // ИНИЦИАЛИЗАЦИЯ
@@ -888,6 +1177,10 @@
         }
         function startApp() {
             showInfoModal();
+
+            // Показываем туториал при первом запуске
+            maybeShowTutorial();
+
             if (!cityId) {
                 showError("Сначала выберите город. Нажмите бургер → Сменить город.");
                 return;
@@ -1114,17 +1407,12 @@
             let startX = 0, startY = 0, currentX = 0, currentY = 0;
             let isDragging = false;
             let pointerId = null;
-            // Определяем, что жест — это свайп (горизонтальный),
-            // а не вертикальная прокрутка.
             let decided = false;
             let isHorizontalSwipe = false;
 
             const badgeLike = card.querySelector(".swipe-badge.like");
             const badgeSkip = card.querySelector(".swipe-badge.skip");
             const THRESHOLD = 100;
-            // Насколько должно преобладать горизонтальное движение,
-            // чтобы считать жест свайпом. Если |dx| < |dy| * RATIO —
-            // значит пользователь скроллит, а не свайпает.
             const DIRECTION_RATIO = 1.2;
 
             function startDrag(x, y, id) {
@@ -1134,8 +1422,6 @@
                 pointerId = id;
                 decided = false;
                 isHorizontalSwipe = false;
-                // card.classList.add("dragging") ставим позже —
-                // когда точно поймём, что это свайп.
             }
 
             function moveDrag(x, y) {
@@ -1147,32 +1433,25 @@
                 const dx = currentX - startX;
                 const dy = currentY - startY;
 
-                // Первое движение: определяем направление
                 if (!decided) {
                     const absDx = Math.abs(dx);
                     const absDy = Math.abs(dy);
 
-                    // Слишком маленькое движение — ждём ещё
                     if (absDx < 6 && absDy < 6) return;
 
                     if (absDx > absDy * DIRECTION_RATIO) {
-                        // Горизонтальное движение — это свайп
                         isHorizontalSwipe = true;
                         decided = true;
                         card.classList.add("dragging");
                     } else if (absDy > absDx * DIRECTION_RATIO) {
-                        // Вертикальное движение — это скролл.
-                        // Отдаём управление странице: отменяем drag.
                         isHorizontalSwipe = false;
                         decided = true;
                         isDragging = false;
-                        // Сбрасываем возможный сдвиг карточки, если был
                         card.style.transform = "";
                         badgeLike.style.opacity = 0;
                         badgeSkip.style.opacity = 0;
                         return;
                     } else {
-                        // Неоднозначное — ждём дальше
                         return;
                     }
                 }
@@ -1196,16 +1475,12 @@
 
             function endDrag() {
                 if (!isDragging) {
-                    // На случай, если isDragging был отменён,
-                    // но card остался со стилем — не трогаем.
                     return;
                 }
                 isDragging = false;
                 card.classList.remove("dragging");
 
                 if (!isHorizontalSwipe) {
-                    // Не свайп — ничего не делаем.
-                    // Тут страница уже поскроллилась сама.
                     return;
                 }
 
@@ -1232,11 +1507,9 @@
                 if (!isDragging) return;
                 const touch = e.touches[0];
                 moveDrag(touch.clientX, touch.clientY);
-                // Если решили, что это свайп — блокируем скролл страницы
                 if (isHorizontalSwipe) {
                     if (e.cancelable) e.preventDefault();
                 }
-                // Если решили, что это скролл — не мешаем браузеру
             }, { passive: false });
 
             card.addEventListener("touchend", () => endDrag());
@@ -1317,11 +1590,6 @@
             }
         }
 
-        /**
-         * Рисует список городов с учётом текущего cityId.
-         * Вызывается и при открытии экрана, и при выборе города —
-         * чтобы галочка сразу переехала на новый город.
-         */
         function renderCityScreen() {
             const container = document.getElementById("city-screen");
             let html = `<div class="section-title">Выберите город</div>`;
@@ -1340,22 +1608,16 @@
 
         async function selectCity(newCityId) {
             if (Number(newCityId) === Number(cityId)) {
-                // тот же город — просто вернёмся в Свайп
                 switchMode("swipe");
                 return;
             }
 
-            // 1. СРАЗУ перерисовываем список городов с галочкой на новом.
-            //    Это даёт мгновенную визуальную обратную связь.
             const previousCityId = cityId;
             cityId = newCityId;
             renderCityScreen();
 
-            // 2. Уходим со скрина городов в Свайп.
-            //    Там покажем состояние загрузки, если нужно.
             switchMode("swipe");
 
-            // 3. Сохраняем на бэкенде (в фоне — пользователь уже видит новое состояние).
             try {
                 await fetch(`${API_URL}/user_city`, {
                     method: "POST",
@@ -1367,13 +1629,11 @@
                 });
             } catch (e) {
                 console.error("Не удалось сохранить город:", e);
-                // Если не удалось — возвращаем как было и показываем ошибку
                 cityId = previousCityId;
                 switchMode("swipe");
                 return;
             }
 
-            // 4. Сбрасываем кэши, потому что они от старого города.
             allPlacesCache = null;
             places = [];
             currentIndex = 0;
@@ -1383,7 +1643,6 @@
             selectedPlaceIds = [];
             selectedCategoryId = null;
 
-            // 5. Обновляем кэш мест для нового города.
             try {
                 const resp = await fetch(`${API_URL}/places?city_id=${cityId}`);
                 allPlacesCache = await resp.json();
@@ -1392,7 +1651,6 @@
                 console.error("Не удалось загрузить места нового города:", e);
             }
 
-            // 6. Перезагружаем Свайп с новыми данными.
             loadPlaces();
         }
 
