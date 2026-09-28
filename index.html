@@ -260,6 +260,8 @@
             overflow: hidden;
             transition: transform 0.3s ease, opacity 0.3s ease;
             user-select: none;
+            /* pan-y оставляем: разрешаем вертикальную прокрутку,
+               но перехватываем горизонтальный жест через JS */
             touch-action: pan-y;
             cursor: grab;
             flex-shrink: 0;
@@ -669,7 +671,7 @@
         }
         .info-modal-button:active { transform: scale(0.98); }
 
-        /* ====== НОВЫЙ ЭКРАН: СМЕНА ГОРОДА ====== */
+        /* ====== ЭКРАН: СМЕНА ГОРОДА ====== */
         #city-screen {
             flex: 1;
             overflow-y: auto;
@@ -689,12 +691,15 @@
             justify-content: space-between;
             gap: 10px;
             cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            transition: transform 0.15s ease, box-shadow 0.15s ease,
+                        border-color 0.15s ease, background 0.15s ease;
+            border: 2px solid transparent;
+            box-sizing: border-box;
         }
         .city-item:active { transform: scale(0.98); }
         .city-item.current {
             background: #fff;
-            border: 2px solid #ff4d6d;
+            border-color: #ff4d6d;
             padding: 14px;
         }
         .city-item-name {
@@ -746,7 +751,6 @@
                 <span id="drawer-favorites-badge" class="drawer-item-badge" hidden>0</span>
             </button>
             <div class="drawer-divider"></div>
-            <!-- НОВОЕ: смена города -->
             <button type="button" class="drawer-item" onclick="openCityScreen(event)">
                 <span class="drawer-item-icon">🏙</span>
                 <span class="drawer-item-label">Сменить город</span>
@@ -770,7 +774,6 @@
         <div id="my-route-screen"></div>
         <div id="result-screen"></div>
         <div id="profile-screen"></div>
-        <!-- НОВОЕ: экран выбора города -->
         <div id="city-screen"></div>
         <div id="build-bottom-bar"></div>
         <div id="empty"></div>
@@ -1111,21 +1114,71 @@
             let startX = 0, startY = 0, currentX = 0, currentY = 0;
             let isDragging = false;
             let pointerId = null;
+            // Определяем, что жест — это свайп (горизонтальный),
+            // а не вертикальная прокрутка.
+            let decided = false;
+            let isHorizontalSwipe = false;
+
             const badgeLike = card.querySelector(".swipe-badge.like");
             const badgeSkip = card.querySelector(".swipe-badge.skip");
             const THRESHOLD = 100;
+            // Насколько должно преобладать горизонтальное движение,
+            // чтобы считать жест свайпом. Если |dx| < |dy| * RATIO —
+            // значит пользователь скроллит, а не свайпает.
+            const DIRECTION_RATIO = 1.2;
+
             function startDrag(x, y, id) {
                 startX = x; startY = y;
                 currentX = x; currentY = y;
                 isDragging = true;
                 pointerId = id;
-                card.classList.add("dragging");
+                decided = false;
+                isHorizontalSwipe = false;
+                // card.classList.add("dragging") ставим позже —
+                // когда точно поймём, что это свайп.
             }
+
             function moveDrag(x, y) {
                 if (!isDragging) return;
-                currentX = x; currentY = y;
+
+                currentX = x;
+                currentY = y;
+
                 const dx = currentX - startX;
                 const dy = currentY - startY;
+
+                // Первое движение: определяем направление
+                if (!decided) {
+                    const absDx = Math.abs(dx);
+                    const absDy = Math.abs(dy);
+
+                    // Слишком маленькое движение — ждём ещё
+                    if (absDx < 6 && absDy < 6) return;
+
+                    if (absDx > absDy * DIRECTION_RATIO) {
+                        // Горизонтальное движение — это свайп
+                        isHorizontalSwipe = true;
+                        decided = true;
+                        card.classList.add("dragging");
+                    } else if (absDy > absDx * DIRECTION_RATIO) {
+                        // Вертикальное движение — это скролл.
+                        // Отдаём управление странице: отменяем drag.
+                        isHorizontalSwipe = false;
+                        decided = true;
+                        isDragging = false;
+                        // Сбрасываем возможный сдвиг карточки, если был
+                        card.style.transform = "";
+                        badgeLike.style.opacity = 0;
+                        badgeSkip.style.opacity = 0;
+                        return;
+                    } else {
+                        // Неоднозначное — ждём дальше
+                        return;
+                    }
+                }
+
+                if (!isHorizontalSwipe) return;
+
                 const rotation = dx * 0.08;
                 card.style.transform = `translate(${dx}px, ${dy}px) rotate(${rotation}deg)`;
                 const opacity = Math.min(Math.abs(dx) / THRESHOLD, 1);
@@ -1140,10 +1193,22 @@
                     badgeSkip.style.opacity = 0;
                 }
             }
+
             function endDrag() {
-                if (!isDragging) return;
+                if (!isDragging) {
+                    // На случай, если isDragging был отменён,
+                    // но card остался со стилем — не трогаем.
+                    return;
+                }
                 isDragging = false;
                 card.classList.remove("dragging");
+
+                if (!isHorizontalSwipe) {
+                    // Не свайп — ничего не делаем.
+                    // Тут страница уже поскроллилась сама.
+                    return;
+                }
+
                 const dx = currentX - startX;
                 const dy = currentY - startY;
                 if (Math.abs(dx) > THRESHOLD) {
@@ -1157,16 +1222,25 @@
                     badgeSkip.style.opacity = 0;
                 }
             }
+
             card.addEventListener("touchstart", (e) => {
                 const touch = e.touches[0];
                 startDrag(touch.clientX, touch.clientY, "touch");
             }, { passive: true });
+
             card.addEventListener("touchmove", (e) => {
                 if (!isDragging) return;
                 const touch = e.touches[0];
                 moveDrag(touch.clientX, touch.clientY);
-            }, { passive: true });
+                // Если решили, что это свайп — блокируем скролл страницы
+                if (isHorizontalSwipe) {
+                    if (e.cancelable) e.preventDefault();
+                }
+                // Если решили, что это скролл — не мешаем браузеру
+            }, { passive: false });
+
             card.addEventListener("touchend", () => endDrag());
+
             card.addEventListener("mousedown", (e) => {
                 startDrag(e.clientX, e.clientY, "mouse");
                 e.preventDefault();
@@ -1236,22 +1310,32 @@
                     const resp = await fetch(`${API_URL}/cities`);
                     citiesCache = await resp.json();
                 }
-                let html = `<div class="section-title">Выберите город</div>`;
-                citiesCache.forEach(city => {
-                    const isCurrent = Number(city.id) === Number(cityId);
-                    html += `
-                        <div class="city-item ${isCurrent ? 'current' : ''}"
-                             onclick="selectCity(${city.id})">
-                            <div class="city-item-name">${city.name}</div>
-                            ${isCurrent ? '<div class="city-item-check">✓</div>' : ''}
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
+                renderCityScreen();
             } catch (e) {
                 console.error(e);
                 container.innerHTML = `<div style="text-align:center; padding:40px; color:#888;">Ошибка загрузки городов</div>`;
             }
+        }
+
+        /**
+         * Рисует список городов с учётом текущего cityId.
+         * Вызывается и при открытии экрана, и при выборе города —
+         * чтобы галочка сразу переехала на новый город.
+         */
+        function renderCityScreen() {
+            const container = document.getElementById("city-screen");
+            let html = `<div class="section-title">Выберите город</div>`;
+            citiesCache.forEach(city => {
+                const isCurrent = Number(city.id) === Number(cityId);
+                html += `
+                    <div class="city-item ${isCurrent ? 'current' : ''}"
+                         onclick="selectCity(${city.id})">
+                        <div class="city-item-name">${city.name}</div>
+                        ${isCurrent ? '<div class="city-item-check">✓</div>' : ''}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
 
         async function selectCity(newCityId) {
@@ -1261,7 +1345,17 @@
                 return;
             }
 
-            // 1. Сохраняем на бэкенде
+            // 1. СРАЗУ перерисовываем список городов с галочкой на новом.
+            //    Это даёт мгновенную визуальную обратную связь.
+            const previousCityId = cityId;
+            cityId = newCityId;
+            renderCityScreen();
+
+            // 2. Уходим со скрина городов в Свайп.
+            //    Там покажем состояние загрузки, если нужно.
+            switchMode("swipe");
+
+            // 3. Сохраняем на бэкенде (в фоне — пользователь уже видит новое состояние).
             try {
                 await fetch(`${API_URL}/user_city`, {
                     method: "POST",
@@ -1273,12 +1367,13 @@
                 });
             } catch (e) {
                 console.error("Не удалось сохранить город:", e);
+                // Если не удалось — возвращаем как было и показываем ошибку
+                cityId = previousCityId;
+                switchMode("swipe");
+                return;
             }
 
-            // 2. Меняем локально
-            cityId = newCityId;
-
-            // 3. Сбрасываем кэши, потому что они от старого города
+            // 4. Сбрасываем кэши, потому что они от старого города.
             allPlacesCache = null;
             places = [];
             currentIndex = 0;
@@ -1288,7 +1383,7 @@
             selectedPlaceIds = [];
             selectedCategoryId = null;
 
-            // 4. Обновляем кэш мест для нового города
+            // 5. Обновляем кэш мест для нового города.
             try {
                 const resp = await fetch(`${API_URL}/places?city_id=${cityId}`);
                 allPlacesCache = await resp.json();
@@ -1297,8 +1392,8 @@
                 console.error("Не удалось загрузить места нового города:", e);
             }
 
-            // 5. Переходим в Свайп
-            switchMode("swipe");
+            // 6. Перезагружаем Свайп с новыми данными.
+            loadPlaces();
         }
 
         // ============================================
