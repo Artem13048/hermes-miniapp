@@ -83,19 +83,23 @@
         }
         .tab:first-child { margin-left: 16px; }
         .tab:last-child { margin-right: 16px; }
+
+        /* ====== ИЗМЕНЕНО: контейнер карточек ====== */
         #card-container {
             flex: 1;
             position: relative;
             padding: 16px;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
+
+        /* ====== ИЗМЕНЕНО: карточка без absolute, центрируется через margin:auto ====== */
         .card {
-            position: absolute;
-            width: calc(100% - 32px);
+            width: 100%;
             max-width: 380px;
+            margin: auto;
             background: #fff;
             border-radius: 20px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.12);
@@ -104,13 +108,18 @@
             user-select: none;
             touch-action: pan-y;
             cursor: grab;
+            flex-shrink: 0;
         }
         .card.dragging { transition: none; cursor: grabbing; }
+
+        /* ====== ИЗМЕНЕНО: фото не растягивается и не сжимается ====== */
         .card img {
             width: 100%;
-            height: 220px;
+            height: auto;
+            max-height: 260px;
             object-fit: cover;
             background: #ddd;
+            display: block;
         }
         .card-icon {
             width: 100%;
@@ -232,7 +241,6 @@
         .build-card.expanded {
             box-shadow: 0 6px 18px rgba(0,0,0,0.12);
         }
-        /* Верхняя строка карточки: название + кнопка "i" */
         .build-card-top {
             display: flex;
             justify-content: space-between;
@@ -1353,8 +1361,6 @@
                     empty.classList.add("visible");
                     return;
                 }
-                // Избранное не зависит от выбранного города.
-                // Получаем список всех городов и загружаем места каждого города.
                 const citiesResp = await fetch(`${API_URL}/cities`);
                 const cities = await citiesResp.json();
                 const cityNames = {};
