@@ -227,12 +227,12 @@
             padding: 14px;
             margin-bottom: 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
         }
-        .build-card-info { flex: 1; min-width: 0; }
+        .build-card.expanded {
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        }
+        .build-card-info { min-width: 0; }
         .build-card-info h3 {
             font-size: 15px;
             margin-bottom: 4px;
@@ -266,6 +266,72 @@
         }
         .btn-add.added { background: #2ecc71; }
         .btn-add:active { transform: scale(0.95); }
+        .build-card-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-info-place {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            border: none;
+            border-radius: 50%;
+            background: #f0f0f2;
+            color: #555;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 34px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .btn-info-place.active {
+            background: #222;
+            color: #fff;
+        }
+        .btn-info-place:active { transform: scale(0.92); }
+        .build-card-details {
+            display: none;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid #eee;
+        }
+        .build-card.expanded .build-card-details { display: block; }
+        .build-card-photo {
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            border-radius: 12px;
+            display: block;
+            background: #f0f0f2;
+            margin-bottom: 12px;
+        }
+        .build-card-photo-placeholder {
+            width: 100%;
+            height: 190px;
+            border-radius: 12px;
+            background: #f0f0f2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+        .build-card-detail-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #222;
+            margin: 10px 0 5px;
+        }
+        .build-card-detail-text {
+            font-size: 13px;
+            line-height: 1.45;
+            color: #666;
+            white-space: pre-line;
+        }
         /* ЭКРАН "МОЙ МАРШРУТ" */
         #my-route-screen {
             flex: 1;
@@ -932,22 +998,62 @@
                 const isAdded = selectedPlaceIds.includes(place.id);
                 const card = document.createElement("div");
                 card.className = "build-card";
+                card.setAttribute("data-build-place-id", place.id);
+                const photoHtml = place.photo_url
+                    ? `<img class="build-card-photo" src="${escapeHtml(place.photo_url)}" alt="${escapeHtml(place.name || "Место")}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+                    : "";
+                const placeholderHtml = `<div class="build-card-photo-placeholder" style="display:${place.photo_url ? "none" : "flex"};">Фото места отсутствует</div>`;
+                const longDescription = place.long_description || place.description || "Подробное описание отсутствует.";
+                const benefitsText = formatPlaceBenefits(place.benefits);
                 card.innerHTML = `
                     <div class="build-card-info">
-                        <h3>${place.name}</h3>
-                        <div class="meta">📍 ${place.address || ""}</div>
-                        <div class="price">${place.price === 0 ? "Бесплатно" : `${place.price} ₽`}</div>
+                        <h3>${escapeHtml(place.name || "Без названия")}</h3>
+                        <div class="meta">${escapeHtml(place.address || "")}</div>
+                        <div class="price">${place.price === 0 ? "Бесплатно" : `${escapeHtml(String(place.price))} ₽`}</div>
                     </div>
-                    <button class="btn-add ${isAdded ? 'added' : ''}"
-                            onclick="toggleAddPlace(${place.id})">
-                        ${isAdded ? '✓ Добавлено' : '➕ Добавить'}
-                    </button>
+                    <div class="build-card-bottom">
+                        <button class="btn-info-place" type="button" title="Информация" onclick="togglePlaceInfo(${place.id}, event)">i</button>
+                        <button class="btn-add ${isAdded ? 'added' : ''}" type="button" onclick="toggleAddPlace(${place.id}, event)">
+                            ${isAdded ? '✓ Добавлено' : '➕ Добавить'}
+                        </button>
+                    </div>
+                    <div class="build-card-details">
+                        ${photoHtml}
+                        ${placeholderHtml}
+                        <div class="build-card-detail-title">Описание</div>
+                        <div class="build-card-detail-text">${escapeHtml(longDescription)}</div>
+                        <div class="build-card-detail-title">Преимущества</div>
+                        <div class="build-card-detail-text">${escapeHtml(benefitsText)}</div>
+                    </div>
                 `;
                 container.appendChild(card);
             });
             updateBuildBottomBar();
         }
-        function toggleAddPlace(placeId) {
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        function formatPlaceBenefits(benefits) {
+            if (benefits === null || benefits === undefined || benefits === "") return "Информация отсутствует.";
+            if (Array.isArray(benefits)) return benefits.join("\n");
+            if (typeof benefits === "object") return Object.values(benefits).join("\n");
+            return String(benefits);
+        }
+        function togglePlaceInfo(placeId, event) {
+            if (event) event.stopPropagation();
+            const card = document.querySelector(`.build-card[data-build-place-id="${placeId}"]`);
+            if (!card) return;
+            const button = card.querySelector(".btn-info-place");
+            const expanded = card.classList.toggle("expanded");
+            if (button) button.classList.toggle("active", expanded);
+        }
+        function toggleAddPlace(placeId, event) {
+            if (event) event.stopPropagation();
             const idx = selectedPlaceIds.indexOf(placeId);
             if (idx === -1) {
                 selectedPlaceIds.push(placeId);
@@ -961,7 +1067,7 @@
             const bar = document.getElementById("build-bottom-bar");
             bar.innerHTML = `
                 <div id="build-bottom-info">Выбрано: ${count} мест</div>
-                <button class="btn-primary" onclick="goToMyRoute()">Перейти к маршруту</button>
+                <button class="btn-primary" onclick="goToMyRoute()">🗺 Перейти к маршруту</button>
             `;
         }
         function goToMyRoute() {
