@@ -668,6 +668,45 @@
             cursor: pointer;
         }
         .info-modal-button:active { transform: scale(0.98); }
+
+        /* ====== НОВЫЙ ЭКРАН: СМЕНА ГОРОДА ====== */
+        #city-screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: none;
+        }
+        #city-screen.visible { display: block; }
+
+        .city-item {
+            background: #fff;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .city-item:active { transform: scale(0.98); }
+        .city-item.current {
+            background: #fff;
+            border: 2px solid #ff4d6d;
+            padding: 14px;
+        }
+        .city-item-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111;
+        }
+        .city-item-check {
+            font-size: 18px;
+            color: #ff4d6d;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -707,6 +746,12 @@
                 <span id="drawer-favorites-badge" class="drawer-item-badge" hidden>0</span>
             </button>
             <div class="drawer-divider"></div>
+            <!-- НОВОЕ: смена города -->
+            <button type="button" class="drawer-item" onclick="openCityScreen(event)">
+                <span class="drawer-item-icon">🏙</span>
+                <span class="drawer-item-label">Сменить город</span>
+            </button>
+            <div class="drawer-divider"></div>
             <button type="button" class="drawer-item" data-mode="profile" onclick="switchMode('profile', event)">
                 <span class="drawer-item-icon">👤</span>
                 <span class="drawer-item-label">Профиль</span>
@@ -725,6 +770,8 @@
         <div id="my-route-screen"></div>
         <div id="result-screen"></div>
         <div id="profile-screen"></div>
+        <!-- НОВОЕ: экран выбора города -->
+        <div id="city-screen"></div>
         <div id="build-bottom-bar"></div>
         <div id="empty"></div>
     </div>
@@ -755,12 +802,14 @@
         let buildCategoryId = null;
         let buildPlaces = [];
         let selectedPlaceIds = [];
+        let citiesCache = null;
 
         const MODE_TITLES = {
             swipe: "Свайп",
             build: "Маршрут",
             favorites: "Избранное",
-            profile: "Профиль"
+            profile: "Профиль",
+            city: "Выбор города"
         };
 
         // ============================================
@@ -837,7 +886,7 @@
         function startApp() {
             showInfoModal();
             if (!cityId) {
-                showError("Сначала выберите город в боте. Отправьте /start.");
+                showError("Сначала выберите город. Нажмите бургер → Сменить город.");
                 return;
             }
             warmup().then(() => {
@@ -892,7 +941,7 @@
         async function switchMode(mode, event) {
             if (event) event.stopPropagation();
             currentMode = mode;
-            document.querySelectorAll(".drawer-item").forEach(t => {
+            document.querySelectorAll(".drawer-item[data-mode]").forEach(t => {
                 t.classList.toggle("active", t.dataset.mode === mode);
             });
             document.getElementById("profile-btn").classList.toggle("active", mode === "profile");
@@ -907,6 +956,7 @@
             document.getElementById("my-route-screen").classList.remove("visible");
             document.getElementById("result-screen").classList.remove("visible");
             document.getElementById("profile-screen").classList.remove("visible");
+            document.getElementById("city-screen").classList.remove("visible");
             document.getElementById("build-bottom-bar").classList.remove("visible");
             document.getElementById("empty").classList.remove("visible");
             if (mode === "swipe") {
@@ -961,8 +1011,6 @@
             selectedCategoryId = categoryId;
             loadPlaces();
         }
-
-        // ====== НОВОЕ: перемешивание массива ======
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -970,7 +1018,6 @@
             }
             return array;
         }
-
         async function loadPlaces() {
             const container = document.getElementById("card-container");
             const empty = document.getElementById("empty");
@@ -984,10 +1031,7 @@
             places = selectedCategoryId === null
                 ? allPlacesCache.slice()
                 : allPlacesCache.filter(p => p.category_id === selectedCategoryId);
-
-            // ====== НОВОЕ: случайный порядок ======
             shuffleArray(places);
-
             currentIndex = 0;
             if (places.length === 0) {
                 empty.innerText = "В этой категории пока нет мест";
@@ -1155,6 +1199,106 @@
             }
             currentIndex++;
             setTimeout(renderNextCard, 250);
+        }
+
+        // ============================================
+        // СМЕНА ГОРОДА
+        // ============================================
+        async function openCityScreen(event) {
+            if (event) event.stopPropagation();
+            closeDrawer();
+            currentMode = "city";
+            document.querySelectorAll(".drawer-item[data-mode]").forEach(t => t.classList.remove("active"));
+            document.getElementById("profile-btn").classList.remove("active");
+            document.getElementById("header-title").textContent = MODE_TITLES.city;
+
+            document.getElementById("tabs").classList.remove("visible");
+            document.getElementById("card-container").style.display = "none";
+            document.getElementById("actions").style.display = "none";
+            document.getElementById("finish-btn").classList.remove("visible");
+            document.getElementById("build-category-tabs").classList.remove("visible");
+            document.getElementById("build-list").classList.remove("visible");
+            document.getElementById("my-route-screen").classList.remove("visible");
+            document.getElementById("result-screen").classList.remove("visible");
+            document.getElementById("profile-screen").classList.remove("visible");
+            document.getElementById("build-bottom-bar").classList.remove("visible");
+            document.getElementById("empty").classList.remove("visible");
+
+            await loadCityScreen();
+            document.getElementById("city-screen").classList.add("visible");
+        }
+
+        async function loadCityScreen() {
+            const container = document.getElementById("city-screen");
+            container.innerHTML = `<div style="text-align:center; padding:40px;">⏳ Загрузка...</div>`;
+            try {
+                if (!citiesCache) {
+                    const resp = await fetch(`${API_URL}/cities`);
+                    citiesCache = await resp.json();
+                }
+                let html = `<div class="section-title">Выберите город</div>`;
+                citiesCache.forEach(city => {
+                    const isCurrent = Number(city.id) === Number(cityId);
+                    html += `
+                        <div class="city-item ${isCurrent ? 'current' : ''}"
+                             onclick="selectCity(${city.id})">
+                            <div class="city-item-name">${city.name}</div>
+                            ${isCurrent ? '<div class="city-item-check">✓</div>' : ''}
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:#888;">Ошибка загрузки городов</div>`;
+            }
+        }
+
+        async function selectCity(newCityId) {
+            if (Number(newCityId) === Number(cityId)) {
+                // тот же город — просто вернёмся в Свайп
+                switchMode("swipe");
+                return;
+            }
+
+            // 1. Сохраняем на бэкенде
+            try {
+                await fetch(`${API_URL}/user_city`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        city_id: newCityId,
+                    }),
+                });
+            } catch (e) {
+                console.error("Не удалось сохранить город:", e);
+            }
+
+            // 2. Меняем локально
+            cityId = newCityId;
+
+            // 3. Сбрасываем кэши, потому что они от старого города
+            allPlacesCache = null;
+            places = [];
+            currentIndex = 0;
+            categories = [];
+            buildCategoryId = null;
+            buildPlaces = [];
+            selectedPlaceIds = [];
+            selectedCategoryId = null;
+
+            // 4. Обновляем кэш мест для нового города
+            try {
+                const resp = await fetch(`${API_URL}/places?city_id=${cityId}`);
+                allPlacesCache = await resp.json();
+                console.log(`✅ Кэш обновлён: ${allPlacesCache.length} мест`);
+            } catch (e) {
+                console.error("Не удалось загрузить места нового города:", e);
+            }
+
+            // 5. Переходим в Свайп
+            switchMode("swipe");
         }
 
         // ============================================
@@ -1338,7 +1482,6 @@
                     return;
                 }
 
-                // Получаем название города для отображения
                 let cityName = "";
                 try {
                     const cityResp = await fetch(`${API_URL}/cities`);
@@ -1347,10 +1490,7 @@
                     if (city) cityName = city.name;
                 } catch (e) { /* ignore */ }
 
-                // Сохраняем маршрут в историю
                 await saveRouteToHistory(data, cityName);
-
-                // Показываем результат в мини-приложении
                 showRouteResult(data);
             } catch (e) {
                 console.error(e);
