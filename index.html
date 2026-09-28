@@ -439,6 +439,54 @@
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
+
+        /* УВЕДОМЛЕНИЕ ПРИ ВХОДЕ В МИНИ-ПРИЛОЖЕНИЕ */
+        #startup-notice {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0,0,0,0.55);
+        }
+        #startup-notice.hidden {
+            display: none;
+        }
+        .startup-notice-card {
+            width: 100%;
+            max-width: 380px;
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+        .startup-notice-card h2 {
+            font-size: 20px;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+        .startup-notice-card p {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .startup-notice-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: #222;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .startup-notice-btn:active {
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body>
@@ -489,7 +537,21 @@
         <div id="empty"></div>
     </div>
 
+    <!-- Уведомление при каждом входе в мини-приложение -->
+    <div id="startup-notice">
+        <div class="startup-notice-card">
+            <h2>Информация</h2>
+            <p>Функция «Свайп» реализована корректно, но некоторые фото на карточках мест могут отображаться неверно или не отображаться из-за отсутствия ссылки на фото места или неправильно подобранного отношения сторон фото.<br><br>Наша команда работает над обновлением базы фото. Просим набраться терпения. Спасибо!</p>
+            <button class="startup-notice-btn" onclick="closeStartupNotice()">Хорошо</button>
+        </div>
+    </div>
+
     <script>
+
+        function closeStartupNotice() {
+            document.getElementById("startup-notice").classList.add("hidden");
+        }
+
         // ============================================
         // НАСТРОЙКИ
         // ============================================
@@ -1105,7 +1167,7 @@
                             📍 ${place.address || ""}
                         </div>
                         <div style="color:#d63031; font-weight:600; font-size:14px;">💰 ${priceText}</div>
-                        ${place.working_hours ? `<div style="color:#888; font-size:13px; margin-top:4px;">⏰ ${place.working_hours}</div>` : ""}
+                        ${place.opening_hours ? `<div style="color:#888; font-size:13px; margin-top:4px;">⏰ ${place.opening_hours}</div>` : ""}
                     </div>
                 `;
             });
