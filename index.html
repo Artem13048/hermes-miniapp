@@ -232,7 +232,14 @@
         .build-card.expanded {
             box-shadow: 0 6px 18px rgba(0,0,0,0.12);
         }
-        .build-card-info { min-width: 0; }
+        /* Верхняя строка карточки: название + кнопка "i" */
+        .build-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .build-card-info { min-width: 0; flex: 1; }
         .build-card-info h3 {
             font-size: 15px;
             margin-bottom: 4px;
@@ -271,12 +278,6 @@
             justify-content: flex-end;
             margin-top: 10px;
         }
-        .build-card-actions {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
-        }
         .btn-info-place {
             width: 34px;
             height: 34px;
@@ -290,6 +291,7 @@
             line-height: 34px;
             text-align: center;
             cursor: pointer;
+            flex-shrink: 0;
         }
         .btn-info-place.active {
             background: #222;
@@ -1009,18 +1011,18 @@
                 const placeholderHtml = `<div class="build-card-photo-placeholder" style="display:${place.photo_url ? "none" : "flex"};">Фото места отсутствует</div>`;
                 const longDescription = place.long_description || place.description || "Подробное описание отсутствует.";
                 card.innerHTML = `
-                    <div class="build-card-info">
-                        <h3>${escapeHtml(place.name || "Без названия")}</h3>
-                        <div class="meta">${escapeHtml(place.address || "")}</div>
-                        <div class="price">${place.price === 0 ? "Бесплатно" : `${escapeHtml(String(place.price))} ₽`}</div>
+                    <div class="build-card-top">
+                        <div class="build-card-info">
+                            <h3>${escapeHtml(place.name || "Без названия")}</h3>
+                            <div class="meta">${escapeHtml(place.address || "")}</div>
+                            <div class="price">${place.price === 0 ? "Бесплатно" : `${escapeHtml(String(place.price))} ₽`}</div>
+                        </div>
+                        <button class="btn-info-place" type="button" title="Информация" aria-label="Информация о месте" onclick="togglePlaceInfo(${place.id}, event)">i</button>
                     </div>
                     <div class="build-card-bottom">
-                        <div class="build-card-actions">
-                            <button class="btn-info-place" type="button" title="Информация" aria-label="Информация о месте" onclick="togglePlaceInfo(${place.id}, event)">i</button>
-                            <button class="btn-add ${isAdded ? 'added' : ''}" type="button" onclick="toggleAddPlace(${place.id}, event)">
-                                ${isAdded ? '✓ Добавлено' : '➕ Добавить'}
-                            </button>
-                        </div>
+                        <button class="btn-add ${isAdded ? 'added' : ''}" type="button" onclick="toggleAddPlace(${place.id}, event)">
+                            ${isAdded ? '✓ Добавлено' : '➕ Добавить'}
+                        </button>
                     </div>
                     <div class="build-card-details">
                         ${photoHtml}
