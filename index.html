@@ -18,41 +18,95 @@
             flex-direction: column;
             height: 100vh;
         }
+
+        /* ====== ОБНОВЛЁННАЯ ШАПКА ====== */
         #header {
-            padding: 14px 16px 10px;
+            padding: 10px 12px 8px;
             background: #fff;
             border-bottom: 1px solid #e0e0e0;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             font-size: 15px;
         }
         #tabs-mode {
             display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
+            gap: 4px;
+            flex-wrap: nowrap;
+            width: 100%;
+            max-width: 480px;
+            background: #f5f5f7;
+            border-radius: 14px;
+            padding: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
         }
+        #tabs-mode::-webkit-scrollbar { display: none; }
         .mode-tab {
-            padding: 6px 10px;
-            border-radius: 12px;
-            background: #f0f0f2;
+            position: relative;
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: transparent;
+            border: none;
+            color: #666;
             font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
             cursor: pointer;
             user-select: none;
             white-space: nowrap;
+            transition: background 0.18s ease, color 0.18s ease, transform 0.1s ease;
+            -webkit-tap-highlight-color: transparent;
         }
+        .mode-tab:hover { color: #222; }
+        .mode-tab:active { transform: scale(0.97); }
         .mode-tab.active {
-            background: #222;
-            color: #fff;
-            font-weight: 600;
+            background: #fff;
+            color: #111;
+            font-weight: 700;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
         }
-        #counter {
+        .mode-tab-icon {
+            font-size: 15px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .mode-tab-label {
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .mode-tab-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
             background: #ff4d6d;
             color: #fff;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 18px;
+            text-align: center;
+            box-shadow: 0 0 0 2px #f5f5f7;
+            box-sizing: border-box;
         }
+        @media (max-width: 360px) {
+            .mode-tab-label { display: none; }
+            .mode-tab { padding: 8px 6px; }
+            .mode-tab-icon { font-size: 17px; }
+        }
+
         #tabs {
             background: #fff;
             padding: 8px 0;
@@ -84,7 +138,7 @@
         .tab:first-child { margin-left: 16px; }
         .tab:last-child { margin-right: 16px; }
 
-        /* ====== ИЗМЕНЕНО: контейнер карточек ====== */
+        /* ====== КОНТЕЙНЕР КАРТОЧЕК ====== */
         #card-container {
             flex: 1;
             position: relative;
@@ -94,8 +148,6 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
-
-        /* ====== ИЗМЕНЕНО: карточка без absolute, центрируется через margin:auto ====== */
         .card {
             width: 100%;
             max-width: 380px;
@@ -111,8 +163,6 @@
             flex-shrink: 0;
         }
         .card.dragging { transition: none; cursor: grabbing; }
-
-        /* ====== ИЗМЕНЕНО: фото не растягивается и не сжимается ====== */
         .card img {
             width: 100%;
             height: auto;
@@ -557,13 +607,25 @@
 <body>
     <div id="app">
         <div id="header">
-            <div id="tabs-mode">
-                <span class="mode-tab active" onclick="switchMode('swipe')">Свайп</span>
-                <span class="mode-tab" onclick="switchMode('build')">➕</span>
-                <span class="mode-tab" onclick="switchMode('favorites')">❤️</span>
-                <span class="mode-tab" onclick="switchMode('profile')">👤</span>
-            </div>
-            <span id="counter">0</span>
+            <nav id="tabs-mode">
+                <button type="button" class="mode-tab active" data-mode="swipe" onclick="switchMode('swipe', event)">
+                    <span class="mode-tab-icon">🎴</span>
+                    <span class="mode-tab-label">Свайп</span>
+                </button>
+                <button type="button" class="mode-tab" data-mode="build" onclick="switchMode('build', event)">
+                    <span class="mode-tab-icon">🗺</span>
+                    <span class="mode-tab-label">Маршрут</span>
+                </button>
+                <button type="button" class="mode-tab" data-mode="favorites" onclick="switchMode('favorites', event)">
+                    <span class="mode-tab-icon">❤️</span>
+                    <span class="mode-tab-label">Избранное</span>
+                    <span id="favorites-badge" class="mode-tab-badge" hidden>0</span>
+                </button>
+                <button type="button" class="mode-tab" data-mode="profile" onclick="switchMode('profile', event)">
+                    <span class="mode-tab-icon">👤</span>
+                    <span class="mode-tab-label">Профиль</span>
+                </button>
+            </nav>
         </div>
         <!-- Свайп: категории -->
         <div id="tabs"></div>
@@ -724,14 +786,11 @@
         // ============================================
         // ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ
         // ============================================
-        async function switchMode(mode) {
+        async function switchMode(mode, event) {
             currentMode = mode;
-            document.querySelectorAll(".mode-tab").forEach(t => t.classList.remove("active"));
-            const tabs = document.querySelectorAll(".mode-tab");
-            if (mode === "swipe") tabs[0].classList.add("active");
-            if (mode === "build") tabs[1].classList.add("active");
-            if (mode === "favorites") tabs[2].classList.add("active");
-            if (mode === "profile") tabs[3].classList.add("active");
+            document.querySelectorAll(".mode-tab").forEach(t => {
+                t.classList.toggle("active", t.dataset.mode === mode);
+            });
             // Скрываем все экраны
             document.getElementById("tabs").classList.remove("visible");
             document.getElementById("card-container").style.display = "none";
@@ -823,8 +882,18 @@
                 const resp = await fetch(`${API_URL}/likes?user_id=${userId}`);
                 const data = await resp.json();
                 likedCount = data.count || 0;
-                document.getElementById("counter").innerText = likedCount;
+                updateFavoritesBadge();
             } catch (e) { console.error(e); }
+        }
+        function updateFavoritesBadge() {
+            const badge = document.getElementById("favorites-badge");
+            if (!badge) return;
+            if (likedCount > 0) {
+                badge.textContent = likedCount > 99 ? "99+" : String(likedCount);
+                badge.hidden = false;
+            } else {
+                badge.hidden = true;
+            }
         }
         function renderNextCard() {
             const container = document.getElementById("card-container");
@@ -952,7 +1021,7 @@
             }
             if (liked) {
                 likedCount++;
-                document.getElementById("counter").innerText = likedCount;
+                updateFavoritesBadge();
                 fetch(`${API_URL}/likes`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -1252,7 +1321,7 @@
                     html += `
                         <div style="text-align:center; padding:40px; color:#888;">
                             У вас пока нет сохранённых маршрутов.<br><br>
-                            Создайте первый маршрут во вкладке «➕».
+                            Создайте первый маршрут во вкладке «🗺 Маршрут».
                         </div>
                     `;
                 } else {
@@ -1429,7 +1498,7 @@
                 }, 100);
             }
             likedCount = Math.max(0, likedCount - 1);
-            document.getElementById("counter").innerText = likedCount;
+            updateFavoritesBadge();
             try {
                 await fetch(`${API_URL}/likes`, {
                     method: "DELETE",
