@@ -1301,75 +1301,6 @@
             renderMyRoute();
         }
 
-        // ============================================
-        // ОТПРАВКА МАРШРУТА В БОТ
-        // ============================================
-
-        /**
-         * Формирует человекочитаемый текст маршрута для отправки в чат.
-         */
-        function formatRouteTextForBot(data, cityName) {
-            const lines = [];
-            lines.push("🗺 Ваш маршрут готов!");
-            if (cityName) lines.push(`🏙 Город: ${cityName}`);
-            lines.push(`📍 Мест: ${data.places_count}`);
-            lines.push(`🚶 Общее расстояние: ${formatDistance(data.total_distance)}`);
-            lines.push(`💰 Общая стоимость: ${data.total_price} ₽`);
-            lines.push("");
-            lines.push("Порядок посещения:");
-            lines.push("");
-            data.route.forEach((place, index) => {
-                const priceText = place.price === 0 ? "Бесплатно" : `${place.price} ₽`;
-                lines.push(`${index + 1}. ${place.name}`);
-                if (place.address) lines.push(`   📍 ${place.address}`);
-                lines.push(`   💰 ${priceText}`);
-                if (place.opening_hours) lines.push(`   ⏰ ${place.opening_hours}`);
-                lines.push("");
-            });
-            lines.push("Приятной прогулки! ✨");
-            return lines.join("\n");
-        }
-
-        /**
-         * Отправляет маршрут в бот через WebApp.sendData.
-         * Отправляем JSON-строку, внутри которой есть и текст, и структура.
-         * Бот на своей стороне может распарсить это и, например,
-         * отправить пользователю текст или построить карту.
-         */
-        function sendRouteToBot(data, cityName) {
-            const text = formatRouteTextForBot(data, cityName);
-            const payload = {
-                type: "route",
-                user_id: userId,
-                city_id: cityId,
-                city_name: cityName || "",
-                places_count: data.places_count,
-                total_distance: data.total_distance,
-                total_price: data.total_price,
-                route: data.route.map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    address: p.address || "",
-                    price: p.price,
-                    opening_hours: p.opening_hours || "",
-                })),
-                text: text,
-            };
-
-            const payloadString = JSON.stringify(payload);
-
-            try {
-                if (window.WebApp?.sendData) {
-                    window.WebApp.sendData(payloadString);
-                    console.log("✅ Маршрут отправлен в бот через WebApp.sendData");
-                } else {
-                    console.warn("⚠️ WebApp.sendData недоступен");
-                }
-            } catch (e) {
-                console.error("Ошибка отправки маршрута в бот:", e);
-            }
-        }
-
         async function submitMyRoute() {
             if (selectedPlaceIds.length === 0) {
                 alert("Добавьте хотя бы одно место");
@@ -1393,7 +1324,7 @@
                     return;
                 }
 
-                // Получаем название города для отображения и отправки в бот
+                // Получаем название города для отображения
                 let cityName = "";
                 try {
                     const cityResp = await fetch(`${API_URL}/cities`);
@@ -1404,9 +1335,6 @@
 
                 // Сохраняем маршрут в историю
                 await saveRouteToHistory(data, cityName);
-
-                // Отправляем маршрут в чат с ботом
-                sendRouteToBot(data, cityName);
 
                 // Показываем результат в мини-приложении
                 showRouteResult(data);
