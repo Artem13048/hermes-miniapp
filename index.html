@@ -396,6 +396,12 @@
             transition: transform 0.3s ease, opacity 0.3s ease,
                         height 0.2s ease, margin 0.2s ease, padding 0.2s ease;
         }
+        .favorite-city {
+            color: #888;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
         .favorite-card h3 { font-size: 16px; margin-bottom: 6px; }
         .btn-remove {
             background: #ffe0e6;
@@ -409,6 +415,51 @@
             font-weight: 600;
         }
         .btn-remove:active { transform: scale(0.95); }
+
+
+        /* ИНФОРМАЦИОННОЕ ОКНО */
+        #info-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+        #info-modal.hidden { display: none; }
+        .info-modal-content {
+            width: 100%;
+            max-width: 380px;
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px 20px 16px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+        .info-modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+        .info-modal-text {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #555;
+        }
+        .info-modal-button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 13px 16px;
+            border: none;
+            border-radius: 12px;
+            background: #222;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .info-modal-button:active { transform: scale(0.98); }
 
         /* СКЕЛЕТОН */
         .skeleton-card {
@@ -487,6 +538,19 @@
         <div id="build-bottom-bar"></div>
 
         <div id="empty"></div>
+    </div>
+
+
+    <!-- Информационное окно -->
+    <div id="info-modal" class="hidden">
+        <div class="info-modal-content">
+            <div class="info-modal-title">Важная информация</div>
+            <div class="info-modal-text">
+                Функция свайп реализована корректно, но некоторые фото на карточках мест могут отображаться неверно или не отображаться из-за отсутствия ссылки на фото места или неправильно подобранного отношения сторон фото.<br><br>
+                Наша команда работает над обновлением базы фото. Просим набраться терпения. Спасибо!
+            </div>
+            <button class="info-modal-button" onclick="closeInfoModal()">Хорошо</button>
+        </div>
     </div>
 
     <script>
@@ -583,7 +647,17 @@
             console.log("Итог:", { userId, cityId });
         }
 
+        function showInfoModal() {
+            document.getElementById("info-modal").classList.remove("hidden");
+        }
+
+        function closeInfoModal() {
+            document.getElementById("info-modal").classList.add("hidden");
+        }
+
         function startApp() {
+            showInfoModal();
+
             if (!cityId) {
                 showError("Сначала выберите город в боте. Отправьте /start.");
                 return;
@@ -1304,7 +1378,7 @@
                 const likedIds = likesData.place_ids || [];
 
                 if (likedIds.length === 0) {
-                    empty.innerText = "❤️ У тебя пока нет избранных мест";
+                    empty.innerText = "У тебя пока нет избранных мест";
                     empty.classList.add("visible");
                     return;
                 }
@@ -1334,7 +1408,7 @@
                 container.style.overflowY = "auto";
 
                 if (favorites.length === 0) {
-                    empty.innerText = "❤️ Избранные места не удалось найти";
+                    empty.innerText = "Избранные места не удалось найти";
                     empty.classList.add("visible");
                     return;
                 }
@@ -1345,9 +1419,9 @@
                     card.setAttribute("data-place-id", place.id);
                     const cityName = cityNames[place.city_id] || "";
                     card.innerHTML = `
+                        ${cityName ? `<div class="favorite-city">${cityName}</div>` : ""}
                         <h3>${place.name}</h3>
                         <div class="card-meta">📍 ${place.address || ""}</div>
-                        ${cityName ? `<div class="card-meta">🏙 ${cityName}</div>` : ""}
                         <div class="card-price">${place.price === 0 ? "Бесплатно" : `${place.price} ₽`}</div>
                         <button class="btn-remove" onclick="removeFavorite(${place.id})">
                             ❌ Убрать из избранного
