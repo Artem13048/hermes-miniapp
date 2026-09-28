@@ -18,8 +18,6 @@
             flex-direction: column;
             height: 100vh;
         }
-
-        /* ====== ШАПКА ====== */
         #header {
             padding: 10px 12px;
             background: #fff;
@@ -109,8 +107,6 @@
             box-shadow: 0 0 0 2px #fff;
             box-sizing: border-box;
         }
-
-        /* ====== ВЫПЛЫВАЮЩЕЕ МЕНЮ ====== */
         #drawer-overlay {
             position: fixed;
             inset: 0;
@@ -140,9 +136,7 @@
             flex-direction: column;
             padding: 20px 0 24px;
         }
-        #drawer.open {
-            transform: translateX(0);
-        }
+        #drawer.open { transform: translateX(0); }
         .drawer-header {
             padding: 0 20px 16px;
             border-bottom: 1px solid #f0f0f2;
@@ -198,9 +192,7 @@
             text-align: center;
             flex-shrink: 0;
         }
-        .drawer-item-label {
-            flex: 1;
-        }
+        .drawer-item-label { flex: 1; }
         .drawer-item-badge {
             min-width: 22px;
             height: 22px;
@@ -219,8 +211,6 @@
             background: #f0f0f2;
             margin: 12px 20px;
         }
-
-        /* ====== КАТЕГОРИИ СВАЙПА ====== */
         #tabs {
             background: #fff;
             padding: 8px 0;
@@ -251,8 +241,6 @@
         }
         .tab:first-child { margin-left: 16px; }
         .tab:last-child { margin-right: 16px; }
-
-        /* ====== КОНТЕЙНЕР КАРТОЧЕК ====== */
         #card-container {
             flex: 1;
             position: relative;
@@ -374,8 +362,6 @@
             line-height: 1.5;
         }
         #empty.visible { display: block; }
-
-        /* ====== КАТЕГОРИИ МАРШРУТА ====== */
         #build-category-tabs {
             background: #fff;
             padding: 8px 0;
@@ -387,8 +373,6 @@
         }
         #build-category-tabs.visible { display: block; }
         #build-category-tabs::-webkit-scrollbar { display: none; }
-
-        /* ====== СПИСОК МЕСТ МАРШРУТА ====== */
         #build-list {
             flex: 1;
             overflow-y: auto;
@@ -512,8 +496,6 @@
             color: #666;
             white-space: pre-line;
         }
-
-        /* ====== ЭКРАН "МОЙ МАРШРУТ" ====== */
         #my-route-screen {
             flex: 1;
             overflow-y: auto;
@@ -569,8 +551,6 @@
             color: #fff;
         }
         .btn-primary:active { transform: scale(0.98); }
-
-        /* ====== РЕЗУЛЬТАТ ====== */
         #result-screen {
             flex: 1;
             overflow-y: auto;
@@ -578,8 +558,6 @@
             display: none;
         }
         #result-screen.visible { display: block; }
-
-        /* ====== ПРОФИЛЬ ====== */
         #profile-screen {
             flex: 1;
             overflow-y: auto;
@@ -617,8 +595,6 @@
             font-weight: 600;
             text-transform: uppercase;
         }
-
-        /* ====== ИЗБРАННОЕ ====== */
         .favorite-card {
             background: #fff;
             border-radius: 16px;
@@ -649,8 +625,6 @@
             font-weight: 600;
         }
         .btn-remove:active { transform: scale(0.95); }
-
-        /* ====== ИНФОРМАЦИОННОЕ ОКНО ====== */
         #info-modal {
             position: fixed;
             inset: 0;
@@ -713,7 +687,6 @@
             </button>
         </div>
 
-        <!-- Выплывающее меню -->
         <div id="drawer-overlay" onclick="closeDrawer()"></div>
         <aside id="drawer" role="navigation" aria-label="Основное меню">
             <div class="drawer-header">
@@ -740,32 +713,21 @@
             </button>
         </aside>
 
-        <!-- Свайп: категории -->
         <div id="tabs"></div>
-        <!-- Свайп: карточки -->
         <div id="card-container"></div>
-        <!-- Свайп: кнопки -->
         <div id="actions">
             <button class="btn-action btn-skip" onclick="swipe(false)">✕</button>
             <button class="btn-action btn-like" onclick="swipe(true)">❤️</button>
         </div>
-        <!-- Свайп: финиш -->
         <button id="finish-btn" onclick="finish()">✨ Сгенерировать маршрут</button>
-        <!-- Маршрут: категории -->
         <div id="build-category-tabs"></div>
-        <!-- Маршрут: список мест -->
         <div id="build-list"></div>
-        <!-- Маршрут: мой маршрут -->
         <div id="my-route-screen"></div>
-        <!-- Результат -->
         <div id="result-screen"></div>
-        <!-- Профиль -->
         <div id="profile-screen"></div>
-        <!-- Нижняя панель -->
         <div id="build-bottom-bar"></div>
         <div id="empty"></div>
     </div>
-    <!-- Информационное окно -->
     <div id="info-modal" class="hidden">
         <div class="info-modal-content">
             <div class="info-modal-title">Важная информация</div>
@@ -790,7 +752,6 @@
         let likedCount = 0;
         let currentMode = "swipe";
         let allPlacesCache = null;
-        // Состояние "Маршрута"
         let buildCategoryId = null;
         let buildPlaces = [];
         let selectedPlaceIds = [];
@@ -931,22 +892,12 @@
         async function switchMode(mode, event) {
             if (event) event.stopPropagation();
             currentMode = mode;
-
-            // Обновляем подсветку в меню
             document.querySelectorAll(".drawer-item").forEach(t => {
                 t.classList.toggle("active", t.dataset.mode === mode);
             });
-
-            // Иконка профиля в шапке — активна, когда открыт профиль
             document.getElementById("profile-btn").classList.toggle("active", mode === "profile");
-
-            // Заголовок в шапке
             document.getElementById("header-title").textContent = MODE_TITLES[mode] || "";
-
-            // Закрываем меню после выбора
             closeDrawer();
-
-            // Скрываем все экраны
             document.getElementById("tabs").classList.remove("visible");
             document.getElementById("card-container").style.display = "none";
             document.getElementById("actions").style.display = "none";
@@ -958,7 +909,6 @@
             document.getElementById("profile-screen").classList.remove("visible");
             document.getElementById("build-bottom-bar").classList.remove("visible");
             document.getElementById("empty").classList.remove("visible");
-
             if (mode === "swipe") {
                 document.getElementById("tabs").classList.add("visible");
                 document.getElementById("card-container").style.display = "flex";
@@ -1350,6 +1300,76 @@
             if (idx !== -1) selectedPlaceIds.splice(idx, 1);
             renderMyRoute();
         }
+
+        // ============================================
+        // ОТПРАВКА МАРШРУТА В БОТ
+        // ============================================
+
+        /**
+         * Формирует человекочитаемый текст маршрута для отправки в чат.
+         */
+        function formatRouteTextForBot(data, cityName) {
+            const lines = [];
+            lines.push("🗺 Ваш маршрут готов!");
+            if (cityName) lines.push(`🏙 Город: ${cityName}`);
+            lines.push(`📍 Мест: ${data.places_count}`);
+            lines.push(`🚶 Общее расстояние: ${formatDistance(data.total_distance)}`);
+            lines.push(`💰 Общая стоимость: ${data.total_price} ₽`);
+            lines.push("");
+            lines.push("Порядок посещения:");
+            lines.push("");
+            data.route.forEach((place, index) => {
+                const priceText = place.price === 0 ? "Бесплатно" : `${place.price} ₽`;
+                lines.push(`${index + 1}. ${place.name}`);
+                if (place.address) lines.push(`   📍 ${place.address}`);
+                lines.push(`   💰 ${priceText}`);
+                if (place.opening_hours) lines.push(`   ⏰ ${place.opening_hours}`);
+                lines.push("");
+            });
+            lines.push("Приятной прогулки! ✨");
+            return lines.join("\n");
+        }
+
+        /**
+         * Отправляет маршрут в бот через WebApp.sendData.
+         * Отправляем JSON-строку, внутри которой есть и текст, и структура.
+         * Бот на своей стороне может распарсить это и, например,
+         * отправить пользователю текст или построить карту.
+         */
+        function sendRouteToBot(data, cityName) {
+            const text = formatRouteTextForBot(data, cityName);
+            const payload = {
+                type: "route",
+                user_id: userId,
+                city_id: cityId,
+                city_name: cityName || "",
+                places_count: data.places_count,
+                total_distance: data.total_distance,
+                total_price: data.total_price,
+                route: data.route.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    address: p.address || "",
+                    price: p.price,
+                    opening_hours: p.opening_hours || "",
+                })),
+                text: text,
+            };
+
+            const payloadString = JSON.stringify(payload);
+
+            try {
+                if (window.WebApp?.sendData) {
+                    window.WebApp.sendData(payloadString);
+                    console.log("✅ Маршрут отправлен в бот через WebApp.sendData");
+                } else {
+                    console.warn("⚠️ WebApp.sendData недоступен");
+                }
+            } catch (e) {
+                console.error("Ошибка отправки маршрута в бот:", e);
+            }
+        }
+
         async function submitMyRoute() {
             if (selectedPlaceIds.length === 0) {
                 alert("Добавьте хотя бы одно место");
@@ -1372,7 +1392,23 @@
                     renderMyRoute();
                     return;
                 }
-                await saveRouteToHistory(data);
+
+                // Получаем название города для отображения и отправки в бот
+                let cityName = "";
+                try {
+                    const cityResp = await fetch(`${API_URL}/cities`);
+                    const cities = await cityResp.json();
+                    const city = cities.find(c => c.id === cityId);
+                    if (city) cityName = city.name;
+                } catch (e) { /* ignore */ }
+
+                // Сохраняем маршрут в историю
+                await saveRouteToHistory(data, cityName);
+
+                // Отправляем маршрут в чат с ботом
+                sendRouteToBot(data, cityName);
+
+                // Показываем результат в мини-приложении
                 showRouteResult(data);
             } catch (e) {
                 console.error(e);
@@ -1380,6 +1416,7 @@
                 renderMyRoute();
             }
         }
+
         function formatDistance(distance) {
             const value = Number(distance);
             if (!Number.isFinite(value) || value < 0) return "0 км";
@@ -1434,22 +1471,15 @@
         // ============================================
         // СОХРАНЕНИЕ В ИСТОРИЮ
         // ============================================
-        async function saveRouteToHistory(data) {
+        async function saveRouteToHistory(data, cityName) {
             try {
-                let cityName = "";
-                try {
-                    const cityResp = await fetch(`${API_URL}/cities`);
-                    const cities = await cityResp.json();
-                    const city = cities.find(c => c.id === cityId);
-                    if (city) cityName = city.name;
-                } catch (e) { /* ignore */ }
                 const resp = await fetch(`${API_URL}/routes/save`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         user_id: userId,
                         city_id: cityId,
-                        city_name: cityName,
+                        city_name: cityName || "",
                         places: data.route,
                         total_distance: data.total_distance,
                         total_price: data.total_price,
